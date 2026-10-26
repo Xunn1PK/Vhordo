@@ -7,6 +7,7 @@ import TextInputDialog from "./TextInputDialog.svelte"
 import MoveListsDialog from "./MoveListsDialog.svelte"
 import TransposeDialog from "./TransposeDialog.svelte"
 import GitHubDatabaseDialog from "./GitHubDatabaseDialog.svelte"
+import GitHubChangesDialog from "./GitHubChangesDialog.svelte"
 
 export const popups = {
     create_song: {
@@ -47,6 +48,9 @@ export const popups = {
     },
     github_database: {
         component: GitHubDatabaseDialog
+    },
+    github_changes: {
+        component: GitHubChangesDialog
     },
     paste_link: {
         component: TextInputDialog

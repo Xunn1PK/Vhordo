@@ -4,7 +4,7 @@ import { Song } from "../models/Song"
 import { Settings } from "../models/Settings"
 import type { NonFunctionProperties } from "../utils/common"
 import { FileSystem } from "./FileSystem"
-import { getGitHubDatabaseConfig, loadGitHubDatabase } from "../integrations/githubDatabase"
+import { getGitHubDatabaseConfig, loadGitHubDatabase, type GitHubDatabase } from "../integrations/githubDatabase"
 import { showToast } from "../state/toast.svelte"
 import { t } from "../state/i18n.svelte"
 
@@ -24,6 +24,7 @@ class StorageManager {
     folders = $state<Folder[]>([])
     lists = $state<List[]>([])
     songs = $state<Song[]>([])
+    pendingGitHubDatabase = $state<GitHubDatabase | null>(null)
 
     isLoaded(): boolean {
         return isLoaded
@@ -31,6 +32,14 @@ class StorageManager {
 
     hasContent(): boolean {
         return this.songs.length > 0 || this.lists.length > 0 || this.folders.length > 0
+    }
+
+    hasPendingGitHubChanges(): boolean {
+        return this.pendingGitHubDatabase !== null
+    }
+
+    dismissGitHubChanges(): void {
+        this.pendingGitHubDatabase = null
     }
 
     constructor() {
@@ -49,7 +58,8 @@ class StorageManager {
         settings: new Settings(),
         folders: [],
         lists: [],
-        songs: []
+        songs: [],
+        pendingGitHubDatabase: null
     }
 
     ///
@@ -100,11 +110,16 @@ class StorageManager {
         this.lists = lists
         this.songs = songs
 
+        const hasLocalDatabase = !!parsed && (Array.isArray(parsed.folders) || Array.isArray(parsed.lists) || Array.isArray(parsed.songs))
         const githubConfig = getGitHubDatabaseConfig()
         if (githubConfig) {
             try {
                 const githubData = await loadGitHubDatabase(githubConfig)
-                if (githubData) this.importData(githubData)
+                if (githubData && hasLocalDatabase && JSON.stringify(this.getDatabaseData()) !== JSON.stringify(githubData)) {
+                    this.pendingGitHubDatabase = githubData
+                } else if (githubData) {
+                    this.importData(githubData)
+                }
             } catch (error) {
                 console.error("Failed to load database from GitHub:", error)
                 showToast(t("settings", "github_load_error"), "error")
