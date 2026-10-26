@@ -10,6 +10,7 @@ export interface SongPaperOptions {
     background?: string
     fontSize?: number
     pageAnimation?: PageSwitchAnimation
+    chordColor?: string
 }
 
 export interface DrawSettings {

@@ -1,23 +1,31 @@
 <script lang="ts">
-    import { onMount, tick } from "svelte"
+    import { createRafScheduler } from "$lib/utils/common"
+    import { isVirtualKeyboardOpen } from "$lib/utils/viewport"
+    import { onMount } from "svelte"
 
-    let {
-        pageIndex,
-        background = "white",
-        padding = 20, // mm
-        fontScale,
-        headerText = "",
-        onPaginate,
-        children
-    } = $props<{
+    interface Props {
         pageIndex?: number | null
         background?: string
+        chordColor?: string
         padding?: number
         fontScale?: number
         headerText?: string
+        ignoreResizeHeight?: boolean
         onPaginate?: () => void
-        children: any
-    }>()
+        children?: any
+    }
+
+    let {
+        pageIndex = null,
+        background = "white",
+        chordColor = undefined,
+        padding = 20, // mm
+        fontScale = undefined,
+        headerText = "",
+        ignoreResizeHeight = false,
+        onPaginate = undefined,
+        children
+    }: Props = $props()
 
     // A4 aspect ratio is 210mm / 297mm
     const ASPECT_RATIO = 210 / 297
@@ -29,6 +37,8 @@
     let isPaginating = false
     let lastWidth = 0
     let lastHeight = 0
+
+    const { schedule: schedulePaginate, scheduleDebounced: scheduleDebouncedPaginate, cancel: cancelPaginate } = createRafScheduler(() => paginate())
 
     /**
      * Measures slotted DOM elements and distributes them across A-paper page containers.
@@ -239,15 +249,6 @@
         }
     }
 
-    let paginateRafId: number | null = null
-    function schedulePaginate() {
-        if (paginateRafId !== null) cancelAnimationFrame(paginateRafId)
-        paginateRafId = requestAnimationFrame(() => {
-            paginateRafId = null
-            paginate()
-        })
-    }
-
     let prevPadding: number | undefined
     let prevHeader: string | undefined
     let prevPageIndex: number | null | undefined
@@ -273,16 +274,22 @@
             lastHeight = containerEl.clientHeight
         }
 
-        // Re-paginate when container size changes
         const resizeObserver = new ResizeObserver((entries) => {
             const entry = entries[0]
             if (entry) {
                 const { width, height } = entry.contentRect
-                if (width === lastWidth && height === lastHeight) return
+
+                // When on-screen virtual keyboard is open, skip repagination
+                if (isVirtualKeyboardOpen()) return
+
+                const widthUnchanged = Math.abs(width - lastWidth) < 1
+                const heightUnchanged = Math.abs(height - lastHeight) < 1
                 lastWidth = width
                 lastHeight = height
+                if (widthUnchanged && heightUnchanged) return
             }
-            schedulePaginate()
+            // Debounce resize recalculations during continuous window dragging
+            scheduleDebouncedPaginate(120)
         })
         if (containerEl) resizeObserver.observe(containerEl)
 
@@ -303,7 +310,7 @@
         paginate()
 
         return () => {
-            if (paginateRafId !== null) cancelAnimationFrame(paginateRafId)
+            cancelPaginate()
             resizeObserver.disconnect()
             mutationObserver.disconnect()
             sourceEl?.removeEventListener("load", handleImageLoad, true)
@@ -326,7 +333,7 @@
     })
 </script>
 
-<div class="paper-viewer" class:dark-paper={isDarkBackground} bind:this={containerEl} style="--background: {background}; --paper-text-color: {isDarkBackground ? '#e6e1e5' : '#111111'};">
+<div class="paper-viewer" class:dark-paper={isDarkBackground} bind:this={containerEl} style="--background: {background}; --paper-text-color: {isDarkBackground ? '#e6e1e5' : '#111111'};{chordColor ? ` --chord-color: ${chordColor};` : ''}">
     <!-- Offscreen Slot Container (used for layout reference & reading DOM nodes) -->
     <div class="source-container" bind:this={sourceEl}>
         {@render children()}

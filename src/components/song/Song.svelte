@@ -1,24 +1,24 @@
 <script lang="ts">
+    import { getExternalSong } from "$lib/integrations/integrationState.svelte"
     import { fullscreenState } from "$lib/state/menu.svelte"
     import storage from "$lib/storage/StorageManager.svelte"
     import ChordPro from "./ChordPro.svelte"
 
-    let {
-        songId,
-        targetKey,
-        semitones
-    } = $props<{
+    interface Props {
         songId: string | null
         targetKey?: string
         semitones?: number
-    }>()
+    }
 
-    let song = $derived(storage.getSongById(songId, storage.songs))
+    let { songId, targetKey = undefined, semitones = undefined }: Props = $props()
+
+    let song = $derived(storage.getSongById(songId, storage.songs) || getExternalSong(songId))
     let hasMedia = $derived(!!song?.images.length)
 
     let customBg = $derived(storage.settings.paperOptions?.background || "#ffffff")
     let paperBg = $derived(hasMedia ? "black" : customBg)
     let fontScale = $derived((storage.settings.paperOptions?.fontSize ?? 100) / 100)
+    let chordColor = $derived(storage.settings.paperOptions?.chordColor || "#5498be")
 
     let isDarkBackground = $derived.by(() => {
         if (!paperBg) return false
@@ -36,11 +36,7 @@
 </script>
 
 <div id={songId} class="paper-wrapper">
-    <div
-        class="paper"
-        class:hasMedia
-        style="background-color: {paperBg}; color: {isDarkBackground ? '#e6e1e5' : '#111111'}; --font-scale: {fontScale};"
-    >
+    <div class="paper" class:hasMedia style="background-color: {paperBg}; color: {isDarkBackground ? '#e6e1e5' : '#111111'}; --font-scale: {fontScale}; --chord-color: {chordColor};">
         <ChordPro {songId} {targetKey} {semitones} hideChords={fullscreenState.lyricsOnly} />
     </div>
 </div>

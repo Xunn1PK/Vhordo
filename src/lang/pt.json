@@ -47,7 +47,11 @@
         "copy": "Copiar",
         "undo": "Desfazer",
         "redo": "Refazer",
-        "open": "Abrir"
+        "open": "Abrir",
+        "refresh": "Atualizar",
+        "move": "Mover",
+        "new": "Novo",
+        "changed": "Alterado"
     },
     "pages": {
         "folder": "Pasta",
@@ -57,6 +61,11 @@
         "all_songs": "Todas as músicas",
         "add_songs": "Adicionar músicas",
         "share_preview": "Importar compartilhado"
+    },
+    "folder": {
+        "move_to_folder": "Mover para pasta",
+        "moved_single": "Movido para {folder}",
+        "moved_plural": "{count} listas movidas para {folder}"
     },
     "folder_types": {
         "shared": "Compartilhado com você"
@@ -81,7 +90,9 @@
         "no_lists_title": "Nenhum repertório ainda",
         "no_lists_desc": "Toque no botão + no canto inferior direito para criar seu primeiro repertório.",
         "no_songs_title": "Nenhuma música ainda",
-        "no_songs_desc": "Toque no botão + no canto inferior direito para adicionar músicas."
+        "no_songs_desc": "Toque no botão + no canto inferior direito para adicionar músicas.",
+        "no_plans_title": "Nenhum plano de culto",
+        "no_plans_desc": "Nenhum plano recente ou futuro encontrado na sua conta."
     },
     "new": {
         "folder": "Criar pasta",
@@ -110,15 +121,10 @@
         "share_song": "Compartilhar música",
         "print": "Imprimir",
         "import_song": "Importar música",
-        "delete_song": "Excluir música",
-        "rename_list": "Renomear repertório",
-        "duplicate_list": "Duplicar repertório",
         "share_list": "Compartilhar repertório",
         "import_list": "Importar repertório",
         "export_as": "Exportar como",
-        "delete_list": "Excluir repertório",
-        "rename_folder": "Renomear pasta",
-        "delete_folder": "Excluir pasta"
+        "auto_scroll": "Rolagem automática"
     },
     "confirm": {
         "delete_song_title": "Excluir música?",
@@ -128,7 +134,11 @@
         "delete_list_title": "Excluir repertório?",
         "delete_list_msg": "Tem certeza de que deseja excluir este repertório?",
         "delete_folder_title": "Excluir pasta?",
-        "delete_folder_msg": "Tem certeza de que deseja excluir esta pasta?",
+        "delete_folder_msg": "Tem certeza de que deseja excluir esta pasta e todas as suas listas?",
+        "delete_lists_title": "Excluir repertórios?",
+        "delete_lists_msg": "Tem certeza de que deseja excluir {count} repertórios?",
+        "delete_folders_title": "Excluir pastas?",
+        "delete_folders_msg": "Tem certeza de que deseja excluir {count} pastas e todas as suas listas?",
         "overwrite_songs_title": "Substituir músicas existentes?",
         "overwrite_song_msg": "1 música deste repertório já existe na sua biblioteca. Deseja substituí-la pela versão compartilhada ou manter a versão atual?",
         "overwrite_songs_msg": "{count} músicas deste repertório já existem na sua biblioteca. Deseja substituí-las pelas versões compartilhadas ou manter as versões atuais?",
@@ -170,6 +180,10 @@
         "reorder_dialog_title": "Reordenar seções",
         "add_section": "Adicionar seção",
         "add_existing_section": "Adicionar seção existente",
+        "add_chord": "Adicionar acorde",
+        "type": "Tipo",
+        "tension": "Tensão",
+        "bass": "Baixo",
         "no_sections": "Nenhuma seção de letra detectada.",
         "delete_section": "Excluir seção",
         "cant_delete_last_section": "Mantenha ao menos uma ocorrência desta seção",
@@ -204,7 +218,29 @@
         "english": "English",
         "norwegian": "Norsk",
         "theme": "Cor do tema",
+        "connections": "Conexões",
+        "connect": "Conectar",
+        "disconnect": "Desconectar",
         "data_management": "Gerenciamento de dados",
+        "github_title": "Sincronização do banco de dados com o GitHub",
+        "github_conflict_title": "Alterações locais encontradas",
+        "github_conflict_message": "O banco de dados local é diferente da versão no GitHub. Escolha qual versão deseja manter.",
+        "github_keep_local": "Manter local",
+        "github_load_github": "Carregar do GitHub",
+        "github_upload_local": "Enviar para o GitHub",
+        "github_repo_link": "Link do repositório GitHub",
+        "github_access_token": "Token de acesso do GitHub",
+        "github_token_help": "Use um token com permissões de leitura e gravação do conteúdo do repositório. Ele será armazenado neste navegador.",
+        "github_configure": "Configurar",
+        "github_upload": "Enviar para o GitHub",
+        "github_upload_success": "Banco de dados enviado para o GitHub.",
+        "github_upload_error": "Não foi possível enviar o banco de dados para o GitHub.",
+        "github_load_error": "Não foi possível carregar o banco de dados do GitHub. Os dados locais foram mantidos.",
+        "github_config_saved": "Repositório GitHub conectado.",
+        "github_config_error": "Não foi possível verificar o repositório ou o token de acesso.",
+        "github_checking": "Verificando…",
+        "github_cancel": "Cancelar",
+        "github_ok": "OK",
         "export_data": "Exportar todos os dados",
         "import_data": "Importar todos os dados",
         "reset_data": "Redefinir todos os dados",
@@ -235,7 +271,8 @@
         "install_ios_title": "Instalar aplicativo",
         "install_ios_step1": "Toque no botão Compartilhar",
         "install_ios_step2": "Role para baixo e toque em \"Adicionar à Tela de Início\"",
-        "install_ios_action": "Instalar"
+        "install_ios_action": "Instalar",
+        "draw_pwa_recommendation": "Dica: Adicione à Tela de Início para desenhar sem que os gestos do Safari saiam do ecrã inteiro"
     },
     "list": {
         "deleted": "Excluído",
@@ -270,7 +307,8 @@
         "no_limit": "Sem limite",
         "days": "dias",
         "access_expired": "Acesso expirado",
-        "access_expired_msg": "O acesso a este conteúdo compartilhado expirou."
+        "access_expired_msg": "O acesso a este conteúdo compartilhado expirou.",
+        "import_to_open_song": "Importe o repertório para abrir a música"
     },
     "export": {
         "success": "Exportado com sucesso!",
@@ -281,6 +319,7 @@
         "show_chords": "Mostrar acordes",
         "settings_title": "Configurações da cifra",
         "page_background": "Fundo da página",
+        "chord_color": "Cor dos acordes",
         "text_size": "Tamanho do texto",
         "page_animation": "Animação de troca de página",
         "animation_none": "Nenhuma",

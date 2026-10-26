@@ -1,7 +1,8 @@
 <script lang="ts">
+    import { handleOAuthCallback } from "$lib/integrations/oauthCallback"
     import { extractSharePayloadFromUrl, resolveSharePayload } from "$lib/share/share"
     import { setSharePayload } from "$lib/share/share.svelte"
-    import { menuState, setActivePage } from "$lib/state/menu.svelte"
+    import { menuState, setActivePage, setActivePopup } from "$lib/state/menu.svelte"
     import { initDocumentTitle } from "$lib/state/title.svelte"
     import { showToast } from "$lib/state/toast.svelte"
     import storage from "$lib/storage/StorageManager.svelte"
@@ -56,8 +57,17 @@
         }
     })
 
+    let hasPromptedGitHubChanges = false
+    $effect(() => {
+        if (!hasPromptedGitHubChanges && storage.isLoaded() && storage.hasPendingGitHubChanges()) {
+            hasPromptedGitHubChanges = true
+            setActivePopup("github_changes")
+        }
+    })
+
     onMount(() => {
         handleIncomingShare()
+        handleOAuthCallback()
         window.addEventListener("hashchange", handleIncomingShare)
         window.addEventListener("popstate", handleIncomingShare)
         const cleanupKeyboard = initDialogKeyboardCentering()

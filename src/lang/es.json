@@ -47,7 +47,11 @@
         "copy": "Copiar",
         "undo": "Deshacer",
         "redo": "Rehacer",
-        "open": "Abrir"
+        "open": "Abrir",
+        "refresh": "Actualizar",
+        "move": "Mover",
+        "new": "Nuevo",
+        "changed": "Modificado"
     },
     "pages": {
         "folder": "Carpeta",
@@ -57,6 +61,11 @@
         "all_songs": "Todas las canciones",
         "add_songs": "Añadir canciones",
         "share_preview": "Importar compartido"
+    },
+    "folder": {
+        "move_to_folder": "Mover a carpeta",
+        "moved_single": "Movido a {folder}",
+        "moved_plural": "Se movieron {count} listas a {folder}"
     },
     "folder_types": {
         "shared": "Compartido contigo"
@@ -81,7 +90,9 @@
         "no_lists_title": "Aún no hay repertorios",
         "no_lists_desc": "Toca el botón + en la esquina inferior derecha para crear tu primer repertorio y añadir canciones.",
         "no_songs_title": "Aún no hay canciones",
-        "no_songs_desc": "Toca el botón + en la esquina inferior derecha para añadir canciones."
+        "no_songs_desc": "Toca el botón + en la esquina inferior derecha para añadir canciones.",
+        "no_plans_title": "Sin planes de servicio",
+        "no_plans_desc": "No se encontraron planes recientes ni próximos en tu cuenta."
     },
     "new": {
         "folder": "Crear carpeta",
@@ -110,15 +121,10 @@
         "share_song": "Compartir canción",
         "print": "Imprimir",
         "import_song": "Importar canción",
-        "delete_song": "Eliminar canción",
-        "rename_list": "Renombrar repertorio",
-        "duplicate_list": "Duplicar repertorio",
         "share_list": "Compartir repertorio",
         "import_list": "Importar repertorio",
         "export_as": "Exportar como",
-        "delete_list": "Eliminar repertorio",
-        "rename_folder": "Renombrar carpeta",
-        "delete_folder": "Eliminar carpeta"
+        "auto_scroll": "Desplazamiento automático"
     },
     "confirm": {
         "delete_song_title": "¿Eliminar canción?",
@@ -128,7 +134,11 @@
         "delete_list_title": "¿Eliminar repertorio?",
         "delete_list_msg": "¿Seguro que deseas eliminar este repertorio?",
         "delete_folder_title": "¿Eliminar carpeta?",
-        "delete_folder_msg": "¿Seguro que deseas eliminar esta carpeta?",
+        "delete_folder_msg": "¿Seguro que deseas eliminar esta carpeta y todas sus listas?",
+        "delete_lists_title": "¿Eliminar repertorios?",
+        "delete_lists_msg": "¿Seguro que deseas eliminar {count} repertorios?",
+        "delete_folders_title": "¿Eliminar carpetas?",
+        "delete_folders_msg": "¿Seguro que deseas eliminar {count} carpetas y todas sus listas?",
         "overwrite_songs_title": "¿Sobrescribir canciones existentes?",
         "overwrite_song_msg": "1 canción de este repertorio ya existe en tu biblioteca. ¿Deseas sobrescribirla con la versión compartida o conservar tu versión actual?",
         "overwrite_songs_msg": "{count} canciones de este repertorio ya existen en tu biblioteca. ¿Deseas sobrescribirlas con las versiones compartidas o conservar tus versiones actuales?",
@@ -170,6 +180,10 @@
         "reorder_dialog_title": "Reordenar secciones",
         "add_section": "Añadir sección",
         "add_existing_section": "Añadir sección existente",
+        "add_chord": "Añadir acorde",
+        "type": "Tipo",
+        "tension": "Tensión",
+        "bass": "Bajo",
         "no_sections": "No se detectaron secciones de letra.",
         "delete_section": "Eliminar sección",
         "cant_delete_last_section": "Conserva al menos una instancia de esta sección",
@@ -204,7 +218,29 @@
         "english": "English",
         "norwegian": "Norsk",
         "theme": "Color del tema",
+        "connections": "Conexiones",
+        "connect": "Conectar",
+        "disconnect": "Desconectar",
         "data_management": "Gestión de datos",
+        "github_title": "Sincronización de la base de datos con GitHub",
+        "github_conflict_title": "Se encontraron cambios locales",
+        "github_conflict_message": "La base de datos local es diferente de la versión de GitHub. Elige qué versión quieres conservar.",
+        "github_keep_local": "Conservar local",
+        "github_load_github": "Cargar desde GitHub",
+        "github_upload_local": "Subir a GitHub",
+        "github_repo_link": "Enlace del repositorio de GitHub",
+        "github_access_token": "Token de acceso de GitHub",
+        "github_token_help": "Usa un token con permisos de lectura y escritura del contenido del repositorio. Se guarda en este navegador.",
+        "github_configure": "Configurar",
+        "github_upload": "Subir a GitHub",
+        "github_upload_success": "Base de datos subida a GitHub.",
+        "github_upload_error": "No se pudo subir la base de datos a GitHub.",
+        "github_load_error": "No se pudo cargar la base de datos desde GitHub. Se conservaron los datos locales.",
+        "github_config_saved": "Repositorio de GitHub conectado.",
+        "github_config_error": "No se pudo verificar el repositorio o el token de acceso.",
+        "github_checking": "Comprobando…",
+        "github_cancel": "Cancelar",
+        "github_ok": "Aceptar",
         "export_data": "Exportar todos los datos",
         "import_data": "Importar todos los datos",
         "reset_data": "Restablecer todos los datos",
@@ -235,7 +271,8 @@
         "install_ios_title": "Instalar aplicación",
         "install_ios_step1": "Toca el botón Compartir",
         "install_ios_step2": "Desplázate hacia abajo y toca \"Añadir a pantalla de inicio\"",
-        "install_ios_action": "Instalar"
+        "install_ios_action": "Instalar",
+        "draw_pwa_recommendation": "Consejo: Añade a la pantalla de inicio para dibujar sin que los gestos de Safari salgan de pantalla completa"
     },
     "list": {
         "deleted": "Eliminado",
@@ -270,7 +307,8 @@
         "no_limit": "Sin límite",
         "days": "días",
         "access_expired": "Acceso caducado",
-        "access_expired_msg": "El acceso a este contenido compartido ha caducado."
+        "access_expired_msg": "El acceso a este contenido compartido ha caducado.",
+        "import_to_open_song": "Importa la lista para abrir la canción"
     },
     "export": {
         "success": "¡Exportado con éxito!",
@@ -281,6 +319,7 @@
         "show_chords": "Mostrar acordes",
         "settings_title": "Ajustes de partitura",
         "page_background": "Fondo de página",
+        "chord_color": "Color de acordes",
         "text_size": "Tamaño de texto",
         "page_animation": "Animación de cambio de página",
         "animation_none": "Ninguna",

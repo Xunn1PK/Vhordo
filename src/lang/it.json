@@ -47,7 +47,11 @@
         "copy": "Copia",
         "undo": "Annulla",
         "redo": "Ripeti",
-        "open": "Apri"
+        "open": "Apri",
+        "refresh": "Aggiorna",
+        "move": "Sposta",
+        "new": "Nuovo",
+        "changed": "Modificato"
     },
     "pages": {
         "folder": "Cartella",
@@ -57,6 +61,11 @@
         "all_songs": "Tutti i brani",
         "add_songs": "Aggiungi brani",
         "share_preview": "Importa condivisione"
+    },
+    "folder": {
+        "move_to_folder": "Sposta nella cartella",
+        "moved_single": "Spostato in {folder}",
+        "moved_plural": "Spostate {count} scalette in {folder}"
     },
     "folder_types": {
         "shared": "Condiviso con te"
@@ -81,7 +90,9 @@
         "no_lists_title": "Nessuna scaletta ancora",
         "no_lists_desc": "Tocca il pulsante + in basso a destra per creare la tua prima scaletta.",
         "no_songs_title": "Nessun brano ancora",
-        "no_songs_desc": "Tocca il pulsante + in basso a destra per aggiungere brani."
+        "no_songs_desc": "Tocca il pulsante + in basso a destra per aggiungere brani.",
+        "no_plans_title": "Nessun programma di servizio",
+        "no_plans_desc": "Nessun programma recente o imminente trovato nel tuo account."
     },
     "new": {
         "folder": "Crea cartella",
@@ -110,15 +121,10 @@
         "share_song": "Condividi brano",
         "print": "Stampa",
         "import_song": "Importa brano",
-        "delete_song": "Elimina brano",
-        "rename_list": "Rinomina scaletta",
-        "duplicate_list": "Duplica scaletta",
         "share_list": "Condividi scaletta",
         "import_list": "Importa scaletta",
         "export_as": "Esporta come",
-        "delete_list": "Elimina scaletta",
-        "rename_folder": "Rinomina cartella",
-        "delete_folder": "Elimina cartella"
+        "auto_scroll": "Scorrimento automatico"
     },
     "confirm": {
         "delete_song_title": "Eliminare brano?",
@@ -128,7 +134,11 @@
         "delete_list_title": "Eliminare scaletta?",
         "delete_list_msg": "Sei sicuro di voler eliminare questa scaletta?",
         "delete_folder_title": "Eliminare cartella?",
-        "delete_folder_msg": "Sei sicuro di voler eliminare questa cartella?",
+        "delete_folder_msg": "Sei sicuro di voler eliminare questa cartella e tutte le sue scalette?",
+        "delete_lists_title": "Eliminare scalette?",
+        "delete_lists_msg": "Sei sicuro di voler eliminare {count} scalette?",
+        "delete_folders_title": "Eliminare cartelle?",
+        "delete_folders_msg": "Sei sicuro di voler eliminare {count} cartelle e tutte le loro scalette?",
         "overwrite_songs_title": "Sovrascrivere i brani esistenti?",
         "overwrite_song_msg": "1 brano in questa scaletta esiste già nella tua libreria. Vuoi sovrascriverlo con la versione condivisa o mantenere la tua versione?",
         "overwrite_songs_msg": "{count} brani in questa scaletta esistono già nella tua libreria. Vuoi sovrascriverli con le versioni condivise o mantenere le tue versioni?",
@@ -170,6 +180,10 @@
         "reorder_dialog_title": "Riordina sezioni",
         "add_section": "Aggiungi sezione",
         "add_existing_section": "Aggiungi sezione esistente",
+        "add_chord": "Aggiungi accordo",
+        "type": "Tipo",
+        "tension": "Tensione",
+        "bass": "Basso",
         "no_sections": "Nessuna sezione di testo rilevata.",
         "delete_section": "Elimina sezione",
         "cant_delete_last_section": "Mantieni almeno un'istanza di questa sezione",
@@ -204,7 +218,29 @@
         "english": "English",
         "norwegian": "Norsk",
         "theme": "Colore tema",
+        "connections": "Connessioni",
+        "connect": "Connetti",
+        "disconnect": "Disconnetti",
         "data_management": "Gestione dati",
+        "github_title": "Sincronizzazione del database con GitHub",
+        "github_conflict_title": "Modifiche locali rilevate",
+        "github_conflict_message": "Il database locale è diverso dalla versione su GitHub. Scegli quale versione mantenere.",
+        "github_keep_local": "Mantieni locale",
+        "github_load_github": "Carica da GitHub",
+        "github_upload_local": "Carica su GitHub",
+        "github_repo_link": "Link del repository GitHub",
+        "github_access_token": "Token di accesso GitHub",
+        "github_token_help": "Usa un token con autorizzazioni di lettura e scrittura dei contenuti del repository. Verrà salvato in questo browser.",
+        "github_configure": "Configura",
+        "github_upload": "Carica su GitHub",
+        "github_upload_success": "Database caricato su GitHub.",
+        "github_upload_error": "Impossibile caricare il database su GitHub.",
+        "github_load_error": "Impossibile caricare il database da GitHub. I dati locali sono stati conservati.",
+        "github_config_saved": "Repository GitHub collegato.",
+        "github_config_error": "Impossibile verificare il repository o il token di accesso.",
+        "github_checking": "Verifica in corso…",
+        "github_cancel": "Annulla",
+        "github_ok": "OK",
         "export_data": "Esporta tutti i dati",
         "import_data": "Importa tutti i dati",
         "reset_data": "Reimposta tutti i dati",
@@ -235,7 +271,8 @@
         "install_ios_title": "Installa app",
         "install_ios_step1": "Tocca il pulsante Condividi",
         "install_ios_step2": "Scorri verso il basso e tocca \"Aggiungi alla schermata Home\"",
-        "install_ios_action": "Installa"
+        "install_ios_action": "Installa",
+        "draw_pwa_recommendation": "Suggerimento: Aggiungi alla schermata Home per disegnare senza che i gesti di Safari chiudano lo schermo intero"
     },
     "list": {
         "deleted": "Eliminato",
@@ -270,7 +307,8 @@
         "no_limit": "Nessun limite",
         "days": "giorni",
         "access_expired": "Accesso scaduto",
-        "access_expired_msg": "L'accesso a questo contenuto condiviso è scaduto."
+        "access_expired_msg": "L'accesso a questo contenuto condiviso è scaduto.",
+        "import_to_open_song": "Importa la scaletta per aprire il brano"
     },
     "export": {
         "success": "Esportato con successo!",
@@ -281,6 +319,7 @@
         "show_chords": "Mostra accordi",
         "settings_title": "Impostazioni spartito",
         "page_background": "Sfondo pagina",
+        "chord_color": "Colore accordi",
         "text_size": "Dimensione testo",
         "page_animation": "Animazione cambio pagina",
         "animation_none": "Nessuna",

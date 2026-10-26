@@ -47,7 +47,11 @@
         "copy": "Copier",
         "undo": "Annuler",
         "redo": "Rétablir",
-        "open": "Ouvrir"
+        "open": "Ouvrir",
+        "refresh": "Actualiser",
+        "move": "Déplacer",
+        "new": "Nouveau",
+        "changed": "Modifié"
     },
     "pages": {
         "folder": "Dossier",
@@ -57,6 +61,11 @@
         "all_songs": "Tous les morceaux",
         "add_songs": "Ajouter des morceaux",
         "share_preview": "Importer le partage"
+    },
+    "folder": {
+        "move_to_folder": "Déplacer vers un dossier",
+        "moved_single": "Déplacé vers {folder}",
+        "moved_plural": "{count} listes déplacées vers {folder}"
     },
     "folder_types": {
         "shared": "Partagé avec vous"
@@ -81,7 +90,9 @@
         "no_lists_title": "Aucune setlist pour l'instant",
         "no_lists_desc": "Touchez le bouton + en bas à droite pour créer votre première setlist.",
         "no_songs_title": "Aucun morceau pour l'instant",
-        "no_songs_desc": "Touchez le bouton + en bas à droite pour ajouter des morceaux."
+        "no_songs_desc": "Touchez le bouton + en bas à droite pour ajouter des morceaux.",
+        "no_plans_title": "Aucun plan de service",
+        "no_plans_desc": "Aucun plan récent ou à venir trouvé dans votre compte."
     },
     "new": {
         "folder": "Créer un dossier",
@@ -110,15 +121,10 @@
         "share_song": "Partager le morceau",
         "print": "Imprimer",
         "import_song": "Importer un morceau",
-        "delete_song": "Supprimer le morceau",
-        "rename_list": "Renommer la setlist",
-        "duplicate_list": "Dupliquer la setlist",
         "share_list": "Partager la setlist",
         "import_list": "Importer une setlist",
         "export_as": "Exporter sous",
-        "delete_list": "Supprimer la setlist",
-        "rename_folder": "Renommer le dossier",
-        "delete_folder": "Supprimer le dossier"
+        "auto_scroll": "Défilement automatique"
     },
     "confirm": {
         "delete_song_title": "Supprimer le morceau ?",
@@ -128,7 +134,11 @@
         "delete_list_title": "Supprimer la setlist ?",
         "delete_list_msg": "Voulez-vous vraiment supprimer cette setlist ?",
         "delete_folder_title": "Supprimer le dossier ?",
-        "delete_folder_msg": "Voulez-vous vraiment supprimer ce dossier ?",
+        "delete_folder_msg": "Voulez-vous vraiment supprimer ce dossier et toutes ses listes ?",
+        "delete_lists_title": "Supprimer les setlists ?",
+        "delete_lists_msg": "Voulez-vous vraiment supprimer {count} setlists ?",
+        "delete_folders_title": "Supprimer les dossiers ?",
+        "delete_folders_msg": "Voulez-vous vraiment supprimer {count} dossiers et toutes leurs listes ?",
         "overwrite_songs_title": "Écraser les morceaux existants ?",
         "overwrite_song_msg": "1 morceau de cette setlist existe déjà dans votre bibliothèque. Voulez-vous l'écraser avec la version partagée ou conserver la vôtre ?",
         "overwrite_songs_msg": "{count} morceaux de cette setlist existent déjà dans votre bibliothèque. Voulez-vous les écraser ou conserver vos versions actuelles ?",
@@ -170,6 +180,10 @@
         "reorder_dialog_title": "Réorganiser les sections",
         "add_section": "Ajouter une section",
         "add_existing_section": "Ajouter une section existante",
+        "add_chord": "Ajouter un accord",
+        "type": "Type",
+        "tension": "Tension",
+        "bass": "Basse",
         "no_sections": "Aucune section de paroles détectée.",
         "delete_section": "Supprimer la section",
         "cant_delete_last_section": "Conservez au moins une occurrence de cette section",
@@ -204,7 +218,29 @@
         "english": "English",
         "norwegian": "Norsk",
         "theme": "Thème de couleur",
+        "connections": "Connexions",
+        "connect": "Connecter",
+        "disconnect": "Déconnecter",
         "data_management": "Gestion des données",
+        "github_title": "Synchronisation de la base de données avec GitHub",
+        "github_conflict_title": "Modifications locales détectées",
+        "github_conflict_message": "La base de données locale diffère de celle sur GitHub. Choisissez la version à conserver.",
+        "github_keep_local": "Garder la version locale",
+        "github_load_github": "Charger depuis GitHub",
+        "github_upload_local": "Envoyer vers GitHub",
+        "github_repo_link": "Lien du dépôt GitHub",
+        "github_access_token": "Jeton d’accès GitHub",
+        "github_token_help": "Utilisez un jeton avec les droits de lecture et d’écriture du contenu du dépôt. Il est enregistré dans ce navigateur.",
+        "github_configure": "Configurer",
+        "github_upload": "Envoyer vers GitHub",
+        "github_upload_success": "Base de données envoyée vers GitHub.",
+        "github_upload_error": "Échec de l’envoi de la base de données vers GitHub.",
+        "github_load_error": "Impossible de charger la base de données depuis GitHub. Vos données locales ont été conservées.",
+        "github_config_saved": "Dépôt GitHub connecté.",
+        "github_config_error": "Impossible de vérifier le dépôt ou le jeton d’accès.",
+        "github_checking": "Vérification…",
+        "github_cancel": "Annuler",
+        "github_ok": "OK",
         "export_data": "Exporter toutes les données",
         "import_data": "Importer toutes les données",
         "reset_data": "Réinitialiser toutes les données",
@@ -235,7 +271,8 @@
         "install_ios_title": "Installer l'application",
         "install_ios_step1": "Appuyez sur le bouton Partager",
         "install_ios_step2": "Faites défiler vers le bas et touchez \"Sur l'écran d'accueil\"",
-        "install_ios_action": "Installer"
+        "install_ios_action": "Installer",
+        "draw_pwa_recommendation": "Astuce : Ajoutez à l'écran d'accueil pour dessiner sans que les gestes Safari ne quittent le plein écran"
     },
     "list": {
         "deleted": "Supprimé",
@@ -270,7 +307,8 @@
         "no_limit": "Illimité",
         "days": "jours",
         "access_expired": "Accès expiré",
-        "access_expired_msg": "L'accès à ce contenu partagé a expiré."
+        "access_expired_msg": "L'accès à ce contenu partagé a expiré.",
+        "import_to_open_song": "Importez la liste pour ouvrir le morceau"
     },
     "export": {
         "success": "Exportation réussie !",
@@ -281,6 +319,7 @@
         "show_chords": "Afficher les accords",
         "settings_title": "Paramètres de la partition",
         "page_background": "Arrière-plan de la page",
+        "chord_color": "Couleur des accords",
         "text_size": "Taille du texte",
         "page_animation": "Animation de changement de page",
         "animation_none": "Aucune",

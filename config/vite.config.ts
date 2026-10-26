@@ -36,6 +36,7 @@ async function readRequestBody(req: IncomingMessage): Promise<Uint8Array | undef
 
 // https://vite.dev/config/
 export default defineConfig({
+    base: '/Chordo/',
     define: {
         __APP_VERSION__: JSON.stringify(pkg.version || "0.0.0")
     },
@@ -75,7 +76,7 @@ export default defineConfig({
                 const env = loadDevVars()
                 server.middlewares.use(async (req, res, next) => {
                     const url = req.originalUrl || req.url || ""
-                    const isApi = url.startsWith("/api/proxy") || url.startsWith("/api/share")
+                    const isApi = url.startsWith("/api/proxy") || url.startsWith("/api/share") || url.startsWith("/api/oauth")
                     if (!isApi) return next()
 
                     try {

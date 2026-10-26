@@ -4,6 +4,9 @@ import { Song } from "../models/Song"
 import { Settings } from "../models/Settings"
 import type { NonFunctionProperties } from "../utils/common"
 import { FileSystem } from "./FileSystem"
+import { getGitHubDatabaseConfig, loadGitHubDatabase, type GitHubDatabase } from "../integrations/githubDatabase"
+import { showToast } from "../state/toast.svelte"
+import { t } from "../state/i18n.svelte"
 
 let isLoaded = $state<boolean>(false)
 
@@ -11,7 +14,9 @@ type NonFunctionKeys<T> = {
     [K in keyof T]: T[K] extends Function ? never : K
 }[keyof T]
 type PureData<T> = T extends Function ? never : T extends Array<infer U> ? Array<PureData<U>> : T extends object ? { [K in NonFunctionKeys<T>]: PureData<T[K]> } : T
-type PureAppData = PureData<AppData>
+type DatabaseData = Pick<AppData, "folders" | "lists" | "songs">
+type PureDatabaseData = PureData<DatabaseData>
+type PureSettings = PureData<AppData["settings"]>
 
 type AppData = NonFunctionProperties<InstanceType<typeof StorageManager>>
 class StorageManager {
@@ -19,6 +24,7 @@ class StorageManager {
     folders = $state<Folder[]>([])
     lists = $state<List[]>([])
     songs = $state<Song[]>([])
+    pendingGitHubDatabase = $state<GitHubDatabase | null>(null)
 
     isLoaded(): boolean {
         return isLoaded
@@ -28,13 +34,20 @@ class StorageManager {
         return this.songs.length > 0 || this.lists.length > 0 || this.folders.length > 0
     }
 
+    hasPendingGitHubChanges(): boolean {
+        return this.pendingGitHubDatabase !== null
+    }
+
+    dismissGitHubChanges(): void {
+        this.pendingGitHubDatabase = null
+    }
+
     constructor() {
         this.load()
     }
 
-    private getData(): AppData {
+    private getDatabaseData(): DatabaseData {
         return {
-            settings: this.settings,
             folders: this.folders,
             lists: this.lists,
             songs: this.songs
@@ -45,7 +58,8 @@ class StorageManager {
         settings: new Settings(),
         folders: [],
         lists: [],
-        songs: []
+        songs: [],
+        pendingGitHubDatabase: null
     }
 
     ///
@@ -71,31 +85,60 @@ class StorageManager {
             }
         }, 3000)
 
-        const wasSaved = await FileSystem.saveConfig<AppData>("data", this.getData())
-        if (!wasSaved) console.error("Failed to persist data")
+        const [dataSaved, settingsSaved] = await Promise.all([
+            FileSystem.saveConfig<DatabaseData>("data", this.getDatabaseData()),
+            FileSystem.saveConfig<Settings>("settings", this.settings)
+        ])
+        if (!dataSaved) console.error("Failed to persist database data")
+        if (!settingsSaved) console.error("Failed to persist settings")
     }
 
     private async load() {
-        const parsed = await FileSystem.loadConfig<PureAppData>("data")
-        if (!parsed) {
-            console.warn("No saved data found!")
-            isLoaded = true
-            return
-        }
+        const [parsed, savedSettings] = await Promise.all([
+            FileSystem.loadConfig<PureDatabaseData & { settings?: PureSettings }>("data"),
+            FileSystem.loadConfig<PureSettings>("settings")
+        ])
 
-        const songs = (parsed.songs || []).map((a) => new Song(a))
-        const folders = (parsed.folders || []).map((a) => new Folder(a))
-        const lists = (parsed.lists || []).map((a) => new List(a))
+        const songs = (parsed?.songs || []).map((a) => new Song(a))
+        const folders = (parsed?.folders || []).map((a) => new Folder(a))
+        const lists = (parsed?.lists || []).map((a) => new List(a))
 
-        this.settings = new Settings(parsed.settings || {})
+        const legacySettings = parsed?.settings
+        this.settings = new Settings(savedSettings || legacySettings || {})
         this.settings.apply()
         this.folders = folders
         this.lists = lists
         this.songs = songs
+
+        const hasLocalDatabase = !!parsed && (Array.isArray(parsed.folders) || Array.isArray(parsed.lists) || Array.isArray(parsed.songs))
+        const githubConfig = getGitHubDatabaseConfig()
+        if (githubConfig) {
+            try {
+                const githubData = await loadGitHubDatabase(githubConfig)
+                if (githubData && hasLocalDatabase && JSON.stringify(this.getDatabaseData()) !== JSON.stringify(githubData)) {
+                    this.pendingGitHubDatabase = githubData
+                } else if (githubData) {
+                    this.importData(githubData)
+                }
+            } catch (error) {
+                console.error("Failed to load database from GitHub:", error)
+                showToast(t("settings", "github_load_error"), "error")
+            }
+        }
+
         isLoaded = true
+
+        if (legacySettings) {
+            const [dataSaved, settingsSaved] = await Promise.all([
+                FileSystem.saveConfig<DatabaseData>("data", this.getDatabaseData()),
+                savedSettings ? Promise.resolve(true) : FileSystem.saveConfig<Settings>("settings", this.settings)
+            ])
+            if (!dataSaved) console.error("Failed to migrate database data")
+            if (!settingsSaved) console.error("Failed to migrate settings")
+        }
     }
 
-    importData(data: Partial<AppData>) {
+    importData(data: Partial<DatabaseData>) {
         if (data.folders && Array.isArray(data.folders)) {
             this.folders = data.folders.map((f) => new Folder(f as any))
         }
@@ -104,10 +147,6 @@ class StorageManager {
         }
         if (data.songs && Array.isArray(data.songs)) {
             this.songs = data.songs.map((s) => new Song(s as any))
-        }
-        if (data.settings) {
-            this.settings = new Settings({ ...this.settings, ...data.settings })
-            this.settings.apply()
         }
         this.refreshSongs()
         this.refreshLists()
@@ -209,6 +248,18 @@ class StorageManager {
     deleteFolder(folderId: string) {
         const folder = this.getFolderById(folderId)
         if (folder?.type === "shared") return
+
+        // Delete all setlists in this folder
+        if (folder?.lists?.length) {
+            const listIdsToDelete = new Set(folder.lists)
+            this.lists = this.lists.filter((l) => !listIdsToDelete.has(l.id))
+            for (const f of this.folders) {
+                if (f.id !== folderId && f.lists) {
+                    f.lists = f.lists.filter((id) => !listIdsToDelete.has(id))
+                }
+            }
+        }
+
         this.folders = this.folders.filter((f) => f.id !== folderId)
         this.save()
     }
