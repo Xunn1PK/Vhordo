@@ -1,6 +1,6 @@
 import { createStore, get, set, del } from "idb-keyval"
 
-type ConfigNames = "data"
+type ConfigNames = "data" | "settings"
 
 function initStore(dbName: string, storeName: string) {
     try {

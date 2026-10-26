@@ -139,7 +139,6 @@
                 folders: storage.folders,
                 lists: storage.lists,
                 songs: storage.songs,
-                settings: storage.settings,
                 exportedAt: new Date().toISOString()
             }
             const bytes = new TextEncoder().encode(JSON.stringify(data, null, 2))
