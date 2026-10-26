@@ -16,6 +16,7 @@
     import "@material/web/iconbutton/outlined-icon-button.js"
     import "@material/web/progress/linear-progress.js"
     import "@material/web/switch/switch.js"
+    import BaseDialog from "./BaseDialog.svelte"
 
     let copyTimeout: ReturnType<typeof setTimeout> | undefined
     onDestroy(() => {
@@ -194,13 +195,8 @@
     }
 </script>
 
-<md-dialog open onclosed={closeDialog} class="share-dialog">
-    <div slot="headline" class="share-headline">
-        <span class="material-symbols-outlined headline-icon">share</span>
-        <span>{isSong ? t("menu", "share_song") : t("menu", "share_list")}</span>
-    </div>
-
-    <div slot="content" class="share-dialog-content">
+<BaseDialog open icon="share" title={isSong ? t("menu", "share_song") : t("menu", "share_list")} onclose={closeDialog}>
+    <div class="share-dialog-content">
         <!-- Options Section -->
         {#if hasMedia || hasDrawings}
             <div class="section-container">
@@ -290,6 +286,18 @@
             <div class="section-title">{t("menu", "export_as")}</div>
 
             <div class="export-options-list">
+                <!-- Print / Save as PDF -->
+                <button type="button" class="export-option-card" onclick={handlePrint}>
+                    <div class="option-icon-container">
+                        <span class="material-symbols-outlined option-icon">docs</span>
+                    </div>
+                    <div class="option-text">
+                        <div class="option-title">{t("menu", "print")}</div>
+                        <div class="option-desc">{t("share", "print_desc")}</div>
+                    </div>
+                    <span class="material-symbols-outlined download-icon">print</span>
+                </button>
+
                 <!-- Export as JSON -->
                 <button type="button" class="export-option-card" onclick={handleExportJson}>
                     <div class="option-icon-container">
@@ -315,40 +323,16 @@
                         <span class="material-symbols-outlined download-icon">download</span>
                     </button>
                 {/if}
-
-                <!-- Print / Save as PDF -->
-                <button type="button" class="export-option-card" onclick={handlePrint}>
-                    <div class="option-icon-container">
-                        <span class="material-symbols-outlined option-icon">docs</span>
-                    </div>
-                    <div class="option-text">
-                        <div class="option-title">{t("menu", "print")}</div>
-                        <div class="option-desc">{t("share", "print_desc")}</div>
-                    </div>
-                    <span class="material-symbols-outlined download-icon">print</span>
-                </button>
             </div>
         </div>
     </div>
 
-    <div slot="actions">
+    {#snippet actions()}
         <md-text-button role="button" tabindex="0" onclick={closeDialog}>{t("common", "close")}</md-text-button>
-    </div>
-</md-dialog>
+    {/snippet}
+</BaseDialog>
 
 <style>
-    .share-headline {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        color: var(--md-sys-color-on-surface, #1d1b20);
-    }
-
-    .headline-icon {
-        color: var(--md-sys-color-primary, #6750a4);
-        font-size: 26px;
-    }
-
     .share-dialog-content {
         display: flex;
         flex-direction: column;

@@ -3,20 +3,13 @@
     import { parseChordPro, splitCommentRepeat } from "$lib/chords/chordproParser"
     import { ALL_METADATA_ALIASES } from "$lib/chords/metadata"
     import { getSongKeyInfo } from "$lib/chords/transpose"
+    import { getExternalSong } from "$lib/integrations/integrationState.svelte"
+    import { Song } from "$lib/models/Song"
+    import { t } from "$lib/state/i18n.svelte"
     import { FileSystem } from "$lib/storage/FileSystem"
     import storage from "$lib/storage/StorageManager.svelte"
 
-    let {
-        songId,
-        song: customSong,
-        targetKey,
-        semitones,
-        showMeta = false,
-        numColumns = 1,
-        lightMode = false, // do some optimization to the rendering if light mode
-        fitParent = true,
-        hideChords = false
-    } = $props<{
+    interface Props {
         songId?: string | null
         song?: any
         targetKey?: string
@@ -26,12 +19,21 @@
         lightMode?: boolean
         fitParent?: boolean
         hideChords?: boolean
-    }>()
+    }
 
-    import { Song } from "$lib/models/Song"
-    import { t } from "$lib/state/i18n.svelte"
+    let {
+        songId = null,
+        song: customSong = undefined,
+        targetKey = undefined,
+        semitones = undefined,
+        showMeta = false,
+        numColumns = 1,
+        lightMode = false, // do some optimization to the rendering if light mode
+        fitParent = true,
+        hideChords = false
+    }: Props = $props()
 
-    let rawSong = $derived(customSong ?? storage.getSongById(songId ?? null, storage.songs))
+    let rawSong = $derived(customSong ?? storage.getSongById(songId ?? null, storage.songs) ?? getExternalSong(songId ?? null))
     let song = $derived(rawSong ? (rawSong instanceof Song ? rawSong : new Song(rawSong)) : null)
     let isExpired = $derived(Boolean(song?.expiresAt && Date.now() > song.expiresAt))
 

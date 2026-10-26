@@ -1,12 +1,17 @@
 <script lang="ts">
+    import { createRafScheduler } from "$lib/utils/common"
+    import { getExternalSong, getPlanAsList } from "$lib/integrations/integrationState.svelte"
     import type { ListSongItem } from "$lib/models/List"
     import { t } from "$lib/state/i18n.svelte"
     import { fullscreenState, goBack, menuState, popupState, savedFullscreenPosition, setActivePopup } from "$lib/state/menu.svelte"
     import { metronomeState } from "$lib/state/metronome.svelte"
     import { playbackState, togglePlayback } from "$lib/state/playback.svelte"
+    import { showToast } from "$lib/state/toast.svelte"
     import storage from "$lib/storage/StorageManager.svelte"
     import { enterFullscreen, exitFullscreen, isFullscreenActive, onFullscreenChange } from "$lib/utils/fullscreen"
+    import { isIos, isIosSafariNonStandalone, openIosPrompt } from "$lib/utils/iosPwa"
     import { parsePlaybackUrl } from "$lib/utils/playback"
+    import { isVirtualKeyboardOpen } from "$lib/utils/viewport"
     import { releaseWakeLock, requestWakeLock } from "$lib/utils/wakeLock"
     import { onMount } from "svelte"
     import { slide } from "svelte/transition"
@@ -21,7 +26,7 @@
 
     // --- State & Derived State ---
     const listId = $derived(menuState.previousPages.find((a) => a.activePage === "list")?.contentId)
-    const list = $derived(listId ? storage.getListById(listId, storage.lists) : null)
+    const list = $derived(listId ? storage.getListById(listId, storage.lists) || getPlanAsList(listId) : null)
 
     const slides = $derived.by<FullscreenSlide[]>(() => {
         if (!list) {
@@ -105,12 +110,6 @@
     function initSlider(node: HTMLElement) {
         node.style.transform = `translate3d(-${initialSlideIndex * 100}vw, 0, 0)`
     }
-
-    $effect(() => {
-        // When drawing mode opens or closes, ensure slider position stays locked to current page
-        isDrawing
-        if (sliderEl && initialPositionConsumed) setPositionByIndex(false)
-    })
 
     // Gesture tracking state
     let isDragging = false
@@ -266,6 +265,7 @@
             if (e.key === "Escape") {
                 isDrawing = false
                 setPositionByIndex(false)
+                if (!isFullscreenActive()) enterFullscreen()
             }
             return
         }
@@ -489,6 +489,37 @@
         }
     }
 
+    // --- Trackpad Two-Finger Swipe (Wheel) Handler ---
+    let wheelDeltaXAccumulator = 0
+    let lastWheelPageTurnTime = 0
+    const WHEEL_SWIPE_THRESHOLD = 180 // Requires a clear, deliberate swipe distance
+    const WHEEL_COOLDOWN = 450 // ms before the next swipe can turn a page
+
+    function handleWheel(e: WheelEvent) {
+        if (isDrawing || popupState.popupId !== null || quickEditOpen) return
+
+        const isHorizontal = Math.abs(e.deltaX) >= Math.abs(e.deltaY)
+        if (isHorizontal || e.shiftKey) {
+            e.preventDefault()
+        }
+
+        const now = Date.now()
+        if (now - lastWheelPageTurnTime < WHEEL_COOLDOWN) return
+
+        const deltaX = isHorizontal ? e.deltaX : e.shiftKey ? e.deltaY : 0
+        wheelDeltaXAccumulator += deltaX
+
+        if (wheelDeltaXAccumulator > WHEEL_SWIPE_THRESHOLD) {
+            lastWheelPageTurnTime = now
+            wheelDeltaXAccumulator = 0
+            goToNextPage()
+        } else if (wheelDeltaXAccumulator < -WHEEL_SWIPE_THRESHOLD) {
+            lastWheelPageTurnTime = now
+            wheelDeltaXAccumulator = 0
+            goToPrevPage()
+        }
+    }
+
     function getTransitionDuration(): number {
         const speed = storage.settings.paperOptions?.pageAnimation ?? "fast"
         if (speed === "none") return 0
@@ -507,7 +538,6 @@
         prevTranslate = currentTranslate
 
         const duration = animate ? getTransitionDuration() : 0
-
         sliderEl.style.transition = duration > 0 ? `transform ${duration}ms cubic-bezier(0.25, 1, 0.5, 1)` : "none"
         sliderEl.style.transform = `translate3d(${currentTranslate}px, 0, 0)`
 
@@ -548,7 +578,9 @@
         }
     }
 
-    let visibleSong = $derived(visibleSongId ? storage.getSongById(visibleSongId, storage.songs) : null)
+    const isExternalPlan = $derived((!!listId && !storage.getListById(listId, storage.lists) && !!getPlanAsList(listId)) || (!storage.getSongById(visibleSongId ?? null, storage.songs) && !!getExternalSong(visibleSongId ?? null)))
+
+    let visibleSong = $derived(visibleSongId ? storage.getSongById(visibleSongId, storage.songs) || getExternalSong(visibleSongId) : null)
 
     // Metronome
     let visibleSongTempo = $derived(Number(visibleSong?.getMetadata?.("tempo")?.match(/\d+/)?.[0]) || null)
@@ -563,18 +595,14 @@
     let visiblePlaybackInfo = $derived(parsePlaybackUrl(visiblePlaybackUrl))
     let isPlayingVisibleSong = $derived(playbackState.isOpen && !!visibleSong && (playbackState.songId === visibleSong.id || (!!visiblePlaybackUrl && playbackState.customPlaybackUrl === visiblePlaybackUrl)))
 
-    let updateRafId: number | null = null
-    function scheduleUpdatePageCount(immediatePosition = false) {
-        if (updateRafId !== null) cancelAnimationFrame(updateRafId)
-        updateRafId = requestAnimationFrame(() => {
-            updateRafId = null
-            updatePageCount()
-            if (immediatePosition) setPositionByIndex(false)
-        })
-    }
+    const { schedule: scheduleUpdatePageCount, scheduleDebounced: scheduleDebouncedUpdatePageCount, cancel: cancelUpdatePageCount } = createRafScheduler((immediatePosition = false) => {
+        updatePageCount()
+        if (immediatePosition) setPositionByIndex(false)
+    })
 
     // --- Lifecycle & DOM Observation ---
     let hasBeenFullscreen = false
+    let hasShownPwaDrawHint = false
 
     onMount(() => {
         requestWakeLock()
@@ -583,53 +611,35 @@
             hasBeenFullscreen = true
         }
 
-        let isAttemptingReentry = false
-        const removeFullscreenListener = onFullscreenChange(async (isActive) => {
+        let isExitingSong = false
+
+        function handleFullscreenExit() {
+            if (isExitingSong) return
+            isExitingSong = true
+            exitSongFullscreen()
+        }
+
+        const removeFullscreenListener = onFullscreenChange((isActive) => {
             if (isActive) {
                 hasBeenFullscreen = true
-                isAttemptingReentry = false
             } else if (hasBeenFullscreen) {
                 if (isDrawing) {
+                    hasBeenFullscreen = false
+                    // in iOS Safari, dragging down with one finger exits fullscreen, nothing to do about it if not in PWA
+                    if (!hasShownPwaDrawHint && isIosSafariNonStandalone()) {
+                        hasShownPwaDrawHint = true
+                        showToast(t("pwa", "draw_pwa_recommendation"), "info", 6000)
+                        openIosPrompt()
+                    }
+                    return
+                }
+                if (isIos()) {
                     hasBeenFullscreen = false
                     return
                 }
 
-                // If document is currently hidden (e.g. tablet screen turned off / locked / minimized),
-                // wait until document becomes visible again before attempting to re-enter fullscreen.
-                if (document.visibilityState === "hidden") {
-                    const handleVisibilityChange = async () => {
-                        if (document.visibilityState === "visible") {
-                            document.removeEventListener("visibilitychange", handleVisibilityChange)
-                            if (!isFullscreenActive() && !isAttemptingReentry) {
-                                isAttemptingReentry = true
-                                const reentered = await enterFullscreen(document.documentElement, true)
-                                if (reentered) {
-                                    hasBeenFullscreen = true
-                                    isAttemptingReentry = false
-                                    return
-                                }
-                                isAttemptingReentry = false
-                                exitSongFullscreen()
-                            }
-                        }
-                    }
-                    document.addEventListener("visibilitychange", handleVisibilityChange)
-                    return
-                }
-
-                // If the screen wasn't hidden, first try re-entering fullscreen
-                if (!isAttemptingReentry) {
-                    isAttemptingReentry = true
-                    const reentered = await enterFullscreen(document.documentElement, true)
-                    if (reentered) {
-                        hasBeenFullscreen = true
-                        isAttemptingReentry = false
-                        return
-                    }
-                    isAttemptingReentry = false
-                }
-
-                exitSongFullscreen()
+                // If user leaves fullscreen (e.g. via browser UI, Esc key, swipe), exit song fullscreen cleanly
+                handleFullscreenExit()
             }
         })
 
@@ -640,11 +650,19 @@
             const entry = entries[0]
             if (entry) {
                 const { width, height } = entry.contentRect
-                if (width === lastSliderWidth && height === lastSliderHeight) return
+
+                // If on-screen virtual keyboard is currently open, skip recalculating pagination
+                if (isVirtualKeyboardOpen()) return
+
+                const widthUnchanged = Math.abs(width - lastSliderWidth) < 1
+                const heightUnchanged = Math.abs(height - lastSliderHeight) < 1
                 lastSliderWidth = width
                 lastSliderHeight = height
+
+                if (widthUnchanged && heightUnchanged) return
             }
-            scheduleUpdatePageCount(true)
+            // Debounce pagination and position adjustments during continuous resize
+            scheduleDebouncedUpdatePageCount(120, true)
         })
 
         if (sliderEl) {
@@ -654,11 +672,14 @@
         updatePageCount()
         setPositionByIndex(false)
 
+        window.addEventListener("wheel", handleWheel, { passive: false })
+
         return () => {
             clearTimeout(hideTimeout)
+            cancelUpdatePageCount()
             if (transitionTimer !== null) clearTimeout(transitionTimer)
             if (moveRafId !== null) cancelAnimationFrame(moveRafId)
-            if (updateRafId !== null) cancelAnimationFrame(updateRafId)
+            window.removeEventListener("wheel", handleWheel)
             removeFullscreenListener()
             resizeObserver.disconnect()
             releaseWakeLock()
@@ -693,7 +714,7 @@
                     <md-menu id="fullscreen-song-list-menu" anchor="fullscreen-song-list-btn" open={songListMenuOpen} onclosed={() => (songListMenuOpen = false)} class="song-list-menu" quick>
                         {#each slides as item, idx}
                             {#if item.type === "song"}
-                                {@const song = storage.getSongById(item.songItem.id ?? null, storage.songs)}
+                                {@const song = storage.getSongById(item.songItem.id ?? null, storage.songs) || getExternalSong(item.songItem.id ?? null)}
                                 {@const isCurrent = currentSlideIndex === idx}
                                 <md-menu-item selected={isCurrent} class:selected={isCurrent} onclick={() => goToSong(item.originalIndex)}>
                                     <span class="material-symbols-outlined" slot="start" style="font-size: 20px; opacity: 0.7;">music_note</span>
@@ -785,7 +806,7 @@
                         </md-menu-item>
                     {/if}
 
-                    {#if visibleSongId}
+                    {#if visibleSongId && !isExternalPlan}
                         <md-menu-item
                             onclick={() => {
                                 moreMenuOpen = false
@@ -804,7 +825,7 @@
                         }}
                     >
                         <span class="material-symbols-outlined" slot="start">tune</span>
-                        <div slot="headline">{t("menu", "settings")}</div>
+                        <div slot="headline">{t("song_fullscreen", "settings_title")}</div>
                     </md-menu-item>
                 </md-menu>
             </div>
@@ -817,21 +838,77 @@
                 {currentPageIndex + 1}/{totalPages}
             </div>
         {:else}
+            {@const songGroups = (() => {
+                const groups: Array<{ key: string | number; pages: number[]; isCurrentSong: boolean }> = []
+                let currentGroup: { key: string | number; pages: number[]; isCurrentSong: boolean } | null = null
+
+                for (let i = 0; i < totalPages; i++) {
+                    const songId = pageSongMap[i]
+                    const songOrigIdx = pageSongIndexMap[i]
+                    const groupKey = songId ?? `idx_${songOrigIdx ?? i}`
+
+                    if (!currentGroup || currentGroup.key !== groupKey) {
+                        currentGroup = {
+                            key: groupKey,
+                            pages: [i],
+                            isCurrentSong: false
+                        }
+                        groups.push(currentGroup)
+                    } else {
+                        currentGroup.pages.push(i)
+                    }
+                }
+
+                for (const group of groups) {
+                    group.isCurrentSong = group.pages.includes(currentPageIndex)
+                }
+
+                return groups
+            })()}
             <div class="progress">
-                {#each Array(totalPages) as _, i}
-                    <button
-                        type="button"
-                        class="dot"
-                        class:active={i === currentPageIndex}
-                        aria-label={`Page ${i + 1}`}
-                        onclick={(e) => {
-                            e.stopPropagation()
-                            if (i !== currentPageIndex) {
-                                currentPageIndex = i
-                                setPositionByIndex(true)
-                            }
-                        }}
-                    ></button>
+                {#each songGroups as group}
+                    {#if group.pages.length > 1}
+                        <div class="song-dot-group" class:active-song={group.isCurrentSong}>
+                            {#each group.pages as pageIdx}
+                                <button
+                                    type="button"
+                                    class="dot"
+                                    class:active={pageIdx === currentPageIndex}
+                                    class:same-song={group.isCurrentSong && pageIdx !== currentPageIndex}
+                                    aria-label={`Page ${pageIdx + 1}`}
+                                    onclick={(e) => {
+                                        e.stopPropagation()
+                                        if (pageIdx !== currentPageIndex) {
+                                            currentPageIndex = pageIdx
+                                            setPositionByIndex(true)
+                                        }
+                                    }}
+                                ></button>
+                            {/each}
+                        </div>
+                    {:else}
+                        {@const pageIdx = group.pages[0]}
+                        {@const origIdx = pageSongIndexMap[pageIdx]}
+                        {@const isSection = origIdx != null && slides.some((s) => s.type === "section" && (s.originalIndex === origIdx || s.sections.some((sec) => sec.originalIndex === origIdx)))}
+                        <button
+                            type="button"
+                            class="dot"
+                            class:section-dot={isSection}
+                            class:active={pageIdx === currentPageIndex}
+                            aria-label={isSection ? `Section ${pageIdx + 1}` : `Page ${pageIdx + 1}`}
+                            onclick={(e) => {
+                                e.stopPropagation()
+                                if (pageIdx !== currentPageIndex) {
+                                    currentPageIndex = pageIdx
+                                    setPositionByIndex(true)
+                                }
+                            }}
+                        >
+                            {#if isSection}
+                                <span class="material-symbols-outlined section-dot-icon">bookmark</span>
+                            {/if}
+                        </button>
+                    {/if}
                 {/each}
             </div>
         {/if}
@@ -851,21 +928,22 @@
             onpointerup={pointerUp}
             onpointercancel={pointerUp}
             onlostpointercapture={pointerUp}
-            style:touch-action={isDrawing ? "none" : "pan-y"}
+            style:touch-action="none"
         >
             {#each slides as slideItem, i}
                 {#if slideItem.type === "song"}
                     {@const songId = slideItem.songItem?.id ?? null}
-                    {@const song = storage.getSongById(songId, storage.songs)}
+                    {@const song = storage.getSongById(songId, storage.songs) || getExternalSong(songId)}
                     {@const targetKey = slideItem.songItem?.transposed || song?.lastTransposed}
                     {@const hasMedia = !!song?.images.length}
 
                     {@const customBg = storage.settings.paperOptions?.background || "white"}
                     {@const paperBg = hasMedia ? "black" : customBg}
                     {@const fontScale = (storage.settings.paperOptions?.fontSize ?? 100) / 100}
+                    {@const chordColor = storage.settings.paperOptions?.chordColor || "#5498be"}
 
-                    <div class="slide" style="--font-scale: {fontScale};">
-                        <Paper padding={hasMedia ? 0 : 10} background={paperBg} headerText={song?.name ?? ""} {fontScale} onPaginate={() => scheduleUpdatePageCount(false)}>
+                    <div class="slide" style="--font-scale: {fontScale}; --chord-color: {chordColor};">
+                        <Paper padding={hasMedia ? 0 : 10} background={paperBg} headerText={song?.name ?? ""} {fontScale} {chordColor} onPaginate={() => scheduleUpdatePageCount(false)}>
                             <ChordPro {songId} {targetKey} numColumns={2} hideChords={fullscreenState.lyricsOnly} showMeta />
                         </Paper>
                     </div>
@@ -999,6 +1077,8 @@
         height: 100vh;
         height: 100dvh;
         overflow: hidden;
+        overscroll-behavior: none;
+        overscroll-behavior-y: none;
     }
 
     /* Metronome */
@@ -1246,10 +1326,29 @@
         transform: translateX(-50%);
         bottom: 14px;
         display: flex;
-        gap: 6px;
+        align-items: center;
+        gap: 5px;
         z-index: 1001;
         pointer-events: auto;
         padding: 4px;
+    }
+
+    .song-dot-group {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        padding: 3px;
+        border-radius: 9999px;
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        transition:
+            background 160ms ease,
+            border-color 160ms ease;
+    }
+
+    .song-dot-group.active-song {
+        background: rgba(255, 255, 255, 0.18);
+        border-color: rgba(255, 255, 255, 0.38);
     }
 
     .progress-number {
@@ -1304,9 +1403,47 @@
         transform: scale(1.2);
     }
 
+    .dot.same-song {
+        background: rgba(255, 255, 255, 0.65);
+    }
+
     .dot.active {
         background: white;
         transform: scale(1.4);
+        opacity: 1;
+    }
+
+    .dot.section-dot {
+        width: 14px;
+        height: 14px;
+        background: transparent;
+        border-radius: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: rgba(255, 255, 255, 0.55);
+        transition:
+            transform 160ms ease,
+            color 160ms ease,
+            opacity 160ms ease;
+    }
+
+    .dot.section-dot .section-dot-icon {
+        font-size: 13px;
+        line-height: 1;
+        font-variation-settings: 'FILL' 1;
+    }
+
+    .dot.section-dot:hover {
+        background: transparent;
+        color: rgba(255, 255, 255, 0.85);
+        transform: scale(1.2);
+    }
+
+    .dot.section-dot.active {
+        background: transparent;
+        color: white;
+        transform: scale(1.3);
         opacity: 1;
     }
 

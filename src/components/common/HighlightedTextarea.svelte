@@ -14,6 +14,7 @@
         onkeydown?: (e: KeyboardEvent) => void
         onchange?: (e: Event) => void
         onblur?: (e: FocusEvent) => void
+        onfocus?: (e: FocusEvent) => void
     }
 
     let {
@@ -30,7 +31,8 @@
         oninput,
         onkeydown,
         onchange,
-        onblur
+        onblur,
+        onfocus
     }: Props = $props()
 
     let textareaEl = $state<HTMLTextAreaElement | null>(null)
@@ -77,7 +79,11 @@
 
     $effect(() => {
         if (textareaEl && propValue !== undefined && textareaEl.value !== propValue) {
+            const prevTop = textareaEl.scrollTop
+            const prevLeft = textareaEl.scrollLeft
             textareaEl.value = propValue
+            textareaEl.scrollTop = prevTop
+            textareaEl.scrollLeft = prevLeft
             handleScroll()
         }
     })
@@ -118,7 +124,10 @@
             onkeydown={onkeydown}
             onchange={onchange}
             onscroll={handleScroll}
-            onfocus={() => (isFocused = true)}
+            onfocus={(e) => {
+                isFocused = true
+                if (onfocus) onfocus(e)
+            }}
             onblur={(e) => {
                 isFocused = false
                 if (onblur) onblur(e)
@@ -252,8 +261,8 @@
 
     /* Highlight style for chord brackets [...] - Deep Blue */
     :global(.chord-highlight) {
-        color: var(--chord-color, #1565c0);
-        background: color-mix(in srgb, var(--chord-color, #1565c0) 12%, transparent);
+        color: #1565c0;
+        background: color-mix(in srgb, #1565c0 12%, transparent);
         border-radius: 2px;
         padding: 0;
         margin: 0;

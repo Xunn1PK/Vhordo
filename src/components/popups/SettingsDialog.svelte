@@ -1,28 +1,27 @@
 <script lang="ts">
+    import { importSetlistFile } from "$lib/export/exportHelper"
     import { Settings, type PageSwitchAnimation } from "$lib/models/Settings"
     import { openConfirm } from "$lib/state/confirm.svelte"
     import { getLocale, SUPPORTED_LANGUAGES, t, type SupportedLocale } from "$lib/state/i18n.svelte"
     import { fullscreenState, menuState, popupState, setActivePopup, setFullscreenLyricsOnly } from "$lib/state/menu.svelte"
     import { getTheme, SUPPORTED_THEMES, type SupportedTheme } from "$lib/state/theme.svelte"
-    import { showToast } from "$lib/state/toast.svelte"
     import storage from "$lib/storage/StorageManager.svelte"
+    import { integrationState } from "$lib/integrations/integrationState.svelte"
     import "@material/web/iconbutton/filled-tonal-icon-button.js"
     import "@material/web/select/outlined-select.js"
     import "@material/web/select/select-option.js"
     import "@material/web/slider/slider.js"
     import "@material/web/switch/switch.js"
+    import BaseDialog from "./BaseDialog.svelte"
 
     let currentLanguage = $derived<SupportedLocale>(getLocale())
     let currentTheme = $derived<SupportedTheme>(getTheme())
     const sortedLanguages = [...SUPPORTED_LANGUAGES].sort((a, b) => a.label.localeCompare(b.label))
+    let fileInputRef = $state<HTMLInputElement | null>(null)
     let importStatus = $state<string | null>(null)
-    let isImporting = $state(false)
-    let isExporting = $state(false)
 
     // Paper options state
-    const isSongSettings = $derived(
-        popupState.popupId === "settings" && (menuState.activePage === "song_live" || menuState.activePage === "song" || menuState.activePage === "all_songs")
-    )
+    const isSongSettings = $derived(popupState.popupId === "settings" && (menuState.activePage === "song_live" || menuState.activePage === "song" || menuState.activePage === "all_songs"))
     const isFullscreen = $derived(menuState.activePage === "song_live")
 
     const BACKGROUND_PRESETS = [
@@ -33,9 +32,33 @@
         { id: "black", color: "#000000", border: "#333333", label: "Black" }
     ]
 
+    export const DEFAULT_CHORD_COLOR = "#5498be"
+
     let currentBg = $state(storage.settings.paperOptions?.background || "#ffffff")
+    let currentChordColor = $state(storage.settings.paperOptions?.chordColor || DEFAULT_CHORD_COLOR)
     let currentFontSize = $state(storage.settings.paperOptions?.fontSize ?? 100)
     let currentPageAnimation = $state<PageSwitchAnimation>(storage.settings.paperOptions?.pageAnimation || "fast")
+    let chordColorInputRef = $state<HTMLInputElement | null>(null)
+
+    let isDarkBg = $derived.by(() => {
+        if (!currentBg) return false
+        const bg = currentBg.toLowerCase().trim()
+        if (bg === "black" || bg === "#000000" || bg === "#000" || bg === "#222222" || bg === "#1e1e1e" || bg === "#242424") return true
+        return !isLightColor(bg)
+    })
+
+    let chordColorPresets = $derived([
+        { id: "default", color: "#5498be", label: "Blue (Default)" },
+        { id: "green", color: "#16a34a", label: "Green" },
+        { id: "orange", color: "#ea580c", label: "Orange" },
+        { id: "red", color: "#dc2626", label: "Red" },
+        { id: "purple", color: "#9333ea", label: "Purple" },
+        { id: "pink", color: "#db2777", label: "Pink" },
+        isDarkBg ? { id: "white", color: "#f5f5f5", label: "Light" } : { id: "charcoal", color: "#212121", label: "Charcoal" }
+    ])
+
+    let isCustomChordColor = $derived(!chordColorPresets.some((p) => p.color.toLowerCase() === currentChordColor.toLowerCase()))
+    let isCustomChordColorLight = $derived(isLightColor(currentChordColor))
 
     function selectBackground(color: string) {
         currentBg = color
@@ -47,6 +70,44 @@
             }
         })
         storage.persist()
+    }
+
+    function selectChordColor(color: string) {
+        currentChordColor = color
+        storage.settings = new Settings({
+            ...storage.settings,
+            paperOptions: {
+                ...storage.settings.paperOptions,
+                chordColor: color
+            }
+        })
+        storage.settings.apply()
+        storage.persist()
+    }
+
+    function handleCustomChordColorInput(e: Event) {
+        const val = (e.target as HTMLInputElement).value
+        if (val) {
+            selectChordColor(val)
+        }
+    }
+
+    function isLightColor(color: string): boolean {
+        if (!color) return true
+        const hex = color.replace("#", "")
+        if (hex.length === 3) {
+            const r = parseInt(hex[0] + hex[0], 16)
+            const g = parseInt(hex[1] + hex[1], 16)
+            const b = parseInt(hex[2] + hex[2], 16)
+            return 0.2126 * r + 0.7152 * g + 0.0722 * b > 160
+        }
+        if (hex.length === 6) {
+            const r = parseInt(hex.substring(0, 2), 16)
+            const g = parseInt(hex.substring(2, 4), 16)
+            const b = parseInt(hex.substring(4, 6), 16)
+            return 0.2126 * r + 0.7152 * g + 0.0722 * b > 160
+        }
+        return true
     }
 
     function handleFontSizeInput(e: Event) {
@@ -87,8 +148,10 @@
 
     function resetPaperDefaults() {
         selectBackground("#ffffff")
+        selectChordColor(DEFAULT_CHORD_COLOR)
         setFontSize(100)
         selectPageAnimation("fast")
+        setFullscreenLyricsOnly(false)
     }
 
     function closeDialog() {
@@ -107,81 +170,47 @@
         storage.persist()
     }
 
-    async function exportBackup() {
-        if (isExporting) return
-        isExporting = true
-        try {
-            let token = localStorage.getItem("gh_token")
-            if (!token) {
-                token = window.prompt(t("settings", "export_token_prompt"))?.trim() || null
-                if (!token) return
-                localStorage.setItem("gh_token", token)
-            }
+    function exportBackup() {
+        const data = {
+            folders: storage.folders,
+            lists: storage.lists,
+            songs: storage.songs,
+            settings: storage.settings,
+            exportedAt: new Date().toISOString()
+        }
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement("a")
+        a.href = url
+        a.download = `chordo-backup-${new Date().toISOString().slice(0, 10)}.json`
+        a.click()
+        URL.revokeObjectURL(url)
+    }
 
-            const fileUrl = "https://api.github.com/repos/Xunn1PK/preobrazhenie-songs/contents/songs.json"
-            const headers = {
-                Authorization: `Bearer ${token}`,
-                Accept: "application/vnd.github+json",
-                "X-GitHub-Api-Version": "2022-11-28"
-            }
-            const currentFileResponse = await fetch(fileUrl, { headers })
-            if (!currentFileResponse.ok) {
-                const error = await currentFileResponse.json().catch(() => null)
-                throw new Error(error?.message || `GitHub request failed (${currentFileResponse.status})`)
-            }
-
-            const currentFile = await currentFileResponse.json()
-            if (typeof currentFile.sha !== "string") {
-                throw new Error("GitHub did not return the current file SHA")
-            }
-
-            const data = {
-                folders: storage.folders,
-                lists: storage.lists,
-                songs: storage.songs,
-                exportedAt: new Date().toISOString()
-            }
-            const bytes = new TextEncoder().encode(JSON.stringify(data, null, 2))
-            let binary = ""
-            for (let offset = 0; offset < bytes.length; offset += 0x8000) {
-                binary += String.fromCharCode(...bytes.subarray(offset, offset + 0x8000))
-            }
-
-            const updateResponse = await fetch(fileUrl, {
-                method: "PUT",
-                headers: { ...headers, "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    message: "Update songs via Chordo app",
-                    content: btoa(binary),
-                    sha: currentFile.sha
-                })
-            })
-            if (!updateResponse.ok) {
-                const error = await updateResponse.json().catch(() => null)
-                throw new Error(error?.message || `GitHub request failed (${updateResponse.status})`)
-            }
-
-            showToast(t("settings", "export_success"), "success")
-        } catch (err) {
-            console.error("Failed to export data to GitHub:", err)
-            const message = err instanceof Error ? err.message : String(err)
-            showToast(`${t("settings", "export_error")} ${message}`, "error")
-        } finally {
-            isExporting = false
+    function triggerImport() {
+        if (fileInputRef) {
+            fileInputRef.click()
         }
     }
 
-    async function importRemoteData() {
-        if (isImporting) return
-        isImporting = true
-        importStatus = null
-        try {
-            const response = await fetch("https://raw.githubusercontent.com/Xunn1PK/preobrazhenie-songs/refs/heads/main/songs.json")
-            if (!response.ok) throw new Error(`Request failed with status ${response.status}`)
-            const parsed = await response.json()
+    async function handleFileImport(e: Event) {
+        const target = e.target as HTMLInputElement
+        const file = target.files?.[0]
+        if (!file) return
 
-            if (!parsed || typeof parsed !== "object" || !Array.isArray(parsed.songs)) {
+        try {
+            const text = await file.text()
+            const parsed = JSON.parse(text)
+
+            if (!parsed || typeof parsed !== "object") {
                 importStatus = t("settings", "import_invalid")
+                return
+            }
+
+            if ((parsed.type === "list" && parsed.list) || (parsed.type === "song" && parsed.song)) {
+                closeDialog()
+                await importSetlistFile(file)
+                if (target) target.value = ""
                 return
             }
 
@@ -192,13 +221,12 @@
                 onConfirm: () => {
                     storage.importData(parsed)
                     importStatus = t("settings", "import_success")
+                    if (target) target.value = ""
                 }
             })
         } catch (err) {
-            console.error("Failed to load remote songs:", err)
+            console.error("Failed to import file:", err)
             importStatus = t("settings", "import_error")
-        } finally {
-            isImporting = false
         }
     }
 
@@ -216,13 +244,8 @@
     }
 </script>
 
-<md-dialog open onclosed={closeDialog} oncancel={closeDialog}>
-    <div slot="headline" class="settings-headline">
-        <span class="material-symbols-outlined settings-icon">{isSongSettings ? "tune" : "settings"}</span>
-        {isSongSettings ? t("song_fullscreen", "settings_title") : t("settings", "title")}
-    </div>
-
-    <div slot="content" class="settings-content">
+<BaseDialog open icon={isSongSettings ? "tune" : "settings"} title={isSongSettings ? t("song_fullscreen", "settings_title") : t("settings", "title")} onclose={closeDialog}>
+    <div class="settings-content">
         {#if isSongSettings}
             <!-- Background Color Section -->
             <div class="settings-section">
@@ -244,12 +267,57 @@
                             onclick={() => selectBackground(preset.color)}
                         >
                             {#if isSelected}
-                                <span class="material-symbols-outlined check-icon" class:light-check={isDarkPreset} class:dark-check={!isDarkPreset}>
-                                    check
-                                </span>
+                                <span class="material-symbols-outlined check-icon" class:light-check={isDarkPreset} class:dark-check={!isDarkPreset}> check </span>
                             {/if}
                         </button>
                     {/each}
+                </div>
+            </div>
+
+            <hr class="section-divider" />
+
+            <!-- Chord Highlight Color Section -->
+            <div class="settings-section">
+                <div class="section-title">
+                    <span class="material-symbols-outlined section-icon">format_color_text</span>
+                    {t("song_fullscreen", "chord_color")}
+                </div>
+                <div class="color-options">
+                    {#each chordColorPresets as preset}
+                        {@const isSelected = currentChordColor.toLowerCase() === preset.color.toLowerCase()}
+                        {@const isLightPreset = preset.color === "#ffffff" || preset.color === "#f5f5f5"}
+                        <button
+                            type="button"
+                            class="color-circle"
+                            class:active={isSelected}
+                            style="background-color: {preset.color}; border-color: {isLightPreset ? '#cac4d0' : 'rgba(0,0,0,0.12)'};"
+                            aria-label={preset.label}
+                            title={preset.label}
+                            onclick={() => selectChordColor(preset.color)}
+                        >
+                            {#if isSelected}
+                                <span class="material-symbols-outlined check-icon" class:dark-check={isLightPreset} class:light-check={!isLightPreset}> check </span>
+                            {/if}
+                        </button>
+                    {/each}
+
+                    <!-- Custom Color Picker -->
+                    <button
+                        type="button"
+                        class="color-circle"
+                        class:active={isCustomChordColor}
+                        style="background: {isCustomChordColor ? currentChordColor : 'transparent'};"
+                        onclick={() => chordColorInputRef?.click()}
+                        aria-label="Custom chord color"
+                        title="Custom chord color"
+                    >
+                        {#if isCustomChordColor}
+                            <span class="material-symbols-outlined check-icon" class:dark-check={isCustomChordColorLight} class:light-check={!isCustomChordColorLight}> check </span>
+                        {:else}
+                            <span class="material-symbols-outlined check-icon palette-icon"> palette </span>
+                        {/if}
+                        <input bind:this={chordColorInputRef} type="color" value={currentChordColor} class="custom-color-input-hidden" oninput={handleCustomChordColorInput} tabindex="-1" aria-hidden="true" />
+                    </button>
                 </div>
             </div>
 
@@ -268,15 +336,7 @@
                     </md-filled-tonal-icon-button>
 
                     <div class="font-size-slider-wrapper">
-                        <md-slider
-                            min="70"
-                            max="150"
-                            value={currentFontSize}
-                            step="5"
-                            labeled
-                            oninput={handleFontSizeInput}
-                            class="font-slider"
-                        ></md-slider>
+                        <md-slider min="70" max="150" value={currentFontSize} step="5" labeled oninput={handleFontSizeInput} class="font-slider"></md-slider>
                         <span class="font-size-label">{currentFontSize}%</span>
                     </div>
 
@@ -349,7 +409,7 @@
                             type="button"
                             class="color-circle"
                             class:active={currentTheme === themeOption.id}
-                            style="background-color: {themeOption.color};"
+                            style="background: {themeOption.gradient ?? themeOption.color};"
                             aria-label={themeOption.labelKey}
                             title={themeOption.labelKey}
                             onclick={() => selectTheme(themeOption.id)}
@@ -390,6 +450,29 @@
 
             <hr class="section-divider" />
 
+            <!-- Connections Section -->
+            <div class="settings-section">
+                <div class="section-title">
+                    <span class="material-symbols-outlined section-icon">cloud_sync</span>
+                    {t("settings", "connections")}
+                </div>
+
+                <div class="integrations-list">
+                    {#each [{ id: "churchapps", name: "ChurchApps (B1.church)" }, { id: "planning_center", name: "Planning Center" }] as const as provider}
+                        <div class="integration-item">
+                            <span>{provider.name}</span>
+                            {#if integrationState.activeProviderId === provider.id}
+                                <md-outlined-button onclick={() => integrationState.disconnectActive()}>{t("settings", "disconnect")}</md-outlined-button>
+                            {:else}
+                                <md-filled-button disabled={!!integrationState.activeProviderId} onclick={() => integrationState.connect(provider.id)}>{t("settings", "connect")}</md-filled-button>
+                            {/if}
+                        </div>
+                    {/each}
+                </div>
+            </div>
+
+            <hr class="section-divider" />
+
             <!-- Data Management Section -->
             <div class="settings-section">
                 <div class="section-title">
@@ -397,15 +480,17 @@
                     {t("settings", "data_management")}
                 </div>
 
+                <input bind:this={fileInputRef} type="file" accept=".json,application/json" style="display: none;" onchange={handleFileImport} />
+
                 <div class="settings-actions">
                     <div class="data-actions-row">
-                        <md-outlined-button onclick={exportBackup} disabled={isExporting}>
-                            <span class="material-symbols-outlined" slot="icon">cloud_upload</span>
+                        <md-outlined-button onclick={exportBackup}>
+                            <span class="material-symbols-outlined" slot="icon">download</span>
                             {t("settings", "export_data")}
                         </md-outlined-button>
 
-                        <md-outlined-button onclick={importRemoteData} disabled={isImporting}>
-                            <span class="material-symbols-outlined" slot="icon">cloud_download</span>
+                        <md-outlined-button onclick={triggerImport}>
+                            <span class="material-symbols-outlined" slot="icon">upload</span>
                             {t("settings", "import_data")}
                         </md-outlined-button>
                     </div>
@@ -423,35 +508,40 @@
         {/if}
     </div>
 
-    <div slot="actions">
+    {#snippet actions()}
         {#if isSongSettings}
             <md-text-button onclick={resetPaperDefaults}>{t("common", "reset")}</md-text-button>
         {/if}
         <md-filled-button role="button" tabindex="0" onclick={closeDialog}>{t("settings", "done")}</md-filled-button>
-    </div>
-</md-dialog>
+    {/snippet}
+</BaseDialog>
 
 <style>
-    .settings-headline {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        color: var(--md-sys-color-on-surface, #1d1b20);
-    }
-
-    .settings-icon {
-        color: var(--md-sys-color-primary);
-        font-size: 28px;
-    }
-
     .settings-content {
         display: flex;
         flex-direction: column;
         gap: 16px;
         color: var(--md-sys-color-on-surface, #1d1b20);
         min-width: 280px;
-        max-height: 70vh;
-        overflow-y: auto;
+    }
+
+    .integrations-list {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .integration-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 6px 14px;
+        border-radius: 12px;
+        border: 1px solid var(--md-sys-color-outline-variant, rgba(0, 0, 0, 0.12));
+        background: var(--md-sys-color-surface-container-low, rgba(0, 0, 0, 0.02));
+        font-weight: 500;
+        font-size: 0.95rem;
     }
 
     .settings-section {
@@ -482,8 +572,9 @@
     }
 
     .theme-circles {
-        display: flex;
-        flex-wrap: wrap;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(38px, 1fr));
+        max-width: calc(7 * 38px + 6 * 12px);
         gap: 12px;
         align-items: center;
         padding: 4px 0;
@@ -577,6 +668,17 @@
 
     .check-icon.light-check {
         color: #ffffff;
+    }
+
+    .custom-color-input-hidden {
+        position: absolute;
+        opacity: 0;
+        width: 0;
+        height: 0;
+        pointer-events: none;
+        margin: 0;
+        padding: 0;
+        border: none;
     }
 
     .font-size-row {
