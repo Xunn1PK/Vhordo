@@ -33,7 +33,7 @@
                 <div class="hero-icon-wrapper">
                     <span class="material-symbols-outlined hero-logo-icon">library_music</span>
                 </div>
-                <h1 class="hero-title">Chordo</h1>
+                <h1 class="hero-title">Vhordo</h1>
             </div>
 
             <p class="hero-tagline">{t("landing", "tagline")}</p>
@@ -98,7 +98,7 @@
                         <span class="material-symbols-outlined">library_music</span>
                     </div>
                     <div class="banner-content">
-                        <h3>Chordo</h3>
+                        <h3>Vhordo</h3>
                         <p>{t("landing", "tagline")}</p>
                     </div>
                 </div>

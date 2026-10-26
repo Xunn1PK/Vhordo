@@ -36,7 +36,7 @@ async function readRequestBody(req: IncomingMessage): Promise<Uint8Array | undef
 
 // https://vite.dev/config/
 export default defineConfig({
-    base: '/Chordo/',
+    base: '/Vhordo/',
     define: {
         __APP_VERSION__: JSON.stringify(pkg.version || "0.0.0")
     },
@@ -110,8 +110,8 @@ export default defineConfig({
             registerType: "prompt",
             includeAssets: ["icons/icon.svg", "icons/maskable-icon.svg"],
             manifest: {
-                name: "Chordo: Chord Sheet Manager",
-                short_name: "Chordo",
+                name: "Vhordo: Chord Sheet Manager",
+                short_name: "Vhordo",
                 description: "Manage, transpose, and annotate chord sheets in one place. Build setlists in seconds and run your show offline.",
                 theme_color: "#feddc2",
                 background_color: "#feddc2",

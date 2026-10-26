@@ -10,12 +10,12 @@ import SongPage from "./SongPage.svelte"
 
 export const pages = {
     landing: {
-        title: "Chordo",
+        title: "Vhordo",
         component: LandingPage
     },
     /// Main App
     home: {
-        title: "Chordo",
+        title: "Vhordo",
         component: HomePage
     },
     folder: {

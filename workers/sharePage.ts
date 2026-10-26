@@ -2,8 +2,8 @@ declare const HTMLRewriter: any
 
 type ShareDetails = { title: string; description: string }
 const DEFAULT_DETAILS: ShareDetails = {
-    title: "Shared With You • Chordo",
-    description: "Someone shared a chord sheet or setlist with you on Chordo. Check it out and save to your library."
+    title: "Shared With You • Vhordo",
+    description: "Someone shared a chord sheet or setlist with you on Vhordo. Check it out and save to your library."
 }
 
 export async function fetchShareMetadata(id: string, env?: any): Promise<ShareDetails> {
@@ -25,7 +25,7 @@ export async function fetchShareMetadata(id: string, env?: any): Promise<ShareDe
             const name = data.song.name
             const artist = data.song.metadata?.artist || data.song.artist
             return {
-                title: `${name}${artist ? ` - ${artist}` : ""} • Chordo`,
+                title: `${name}${artist ? ` - ${artist}` : ""} • Vhordo`,
                 description: `Shared chord sheet for "${name}". Check it out and save to your library.`
             }
         }
@@ -34,7 +34,7 @@ export async function fetchShareMetadata(id: string, env?: any): Promise<ShareDe
             const name = data.list.name
             const count = Array.isArray(data.list.songs) ? data.list.songs.length : 0
             return {
-                title: `${name} • Chordo Setlist`,
+                title: `${name} • Vhordo Setlist`,
                 description: `Shared setlist "${name}"${count ? ` (${count} songs)` : ""}. Check it out and save to your library.`
             }
         }

@@ -408,7 +408,7 @@ export function generateFreeShowProject(list: List, allSongs: Song[]): FreeShowP
         },
         shows,
         categories: {
-            chordo: { name: "Chordo", icon: "song" }
+            chordo: { name: "Vhordo", icon: "song" }
         }
     }
 }

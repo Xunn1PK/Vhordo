@@ -159,7 +159,7 @@ export async function uploadGitHubDatabase(config: GitHubDatabaseConfig, databas
     const currentFile = await getDatabaseFile(config, path)
     const content = encodeBase64(JSON.stringify(database, null, 2))
     const body: { message: string; content: string; sha?: string } = {
-        message: "Update Chordo song database",
+        message: "Update Vhordo song database",
         content
     }
     if (currentFile) body.sha = currentFile.sha

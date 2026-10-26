@@ -23,7 +23,7 @@ export async function exportSongAsJson(song: Song, options: SongShareOptions = {
         const url = URL.createObjectURL(blob)
         const a = document.createElement("a")
         a.href = url
-        a.download = sanitizeFilename(`chordo_${song.name}`, "json")
+        a.download = sanitizeFilename(`vhordo_${song.name}`, "json")
         document.body.appendChild(a)
         a.click()
         document.body.removeChild(a)
@@ -51,7 +51,7 @@ export async function exportSetlistAsJson(list: List, allSongs: Song[], options:
         const url = URL.createObjectURL(blob)
         const a = document.createElement("a")
         a.href = url
-        a.download = sanitizeFilename(`chordo_${list.name}`, "json")
+        a.download = sanitizeFilename(`vhordo_${list.name}`, "json")
         document.body.appendChild(a)
         a.click()
         document.body.removeChild(a)
@@ -120,4 +120,3 @@ export async function importChordoFile(file: File): Promise<boolean> {
 }
 
 export const importSetlistFile = importChordoFile
-

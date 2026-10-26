@@ -26,7 +26,7 @@
     })
 </script>
 
-<BaseDialog open icon="library_music" title={`Chordo: ${t("about", "tagline")}`} onclose={closeDialog}>
+<BaseDialog open icon="library_music" title={`Vhordo: ${t("about", "tagline")}`} onclose={closeDialog}>
     <div class="about-content">
         <p class="about-version">{t("about", "version")} {appVersion}</p>
         <p class="about-desc">

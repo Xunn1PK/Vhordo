@@ -5,9 +5,9 @@
 
 *Big thanks to Kristoffer Vassbø for creating such an [awesome app](https://github.com/ChurchApps/Chordo)! <3*
 
-# Chordo: Chord Sheet Manager
+# Vhordo: Chord Sheet Manager
 
-![Chordo: Chord Sheet Manager](./public/og-image.jpg)
+![Vhordo: Chord Sheet Manager](./public/og-image.jpg)
 
 > Everything you need to manage, transpose, and annotate your chord sheets in one place. Import from ChordPro, PDF, or URLs, build setlists in seconds, and run your show completely offline.
 
