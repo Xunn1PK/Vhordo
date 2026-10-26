@@ -3,7 +3,7 @@
     import { openConfirm } from "$lib/state/confirm.svelte"
     import { t } from "$lib/state/i18n.svelte"
     import { goBack, listEditingState, menuState, setActivePage, setActivePopup } from "$lib/state/menu.svelte"
-    import { searchState } from "$lib/state/search.svelte"
+    import { searchState, songMatchesSearch } from "$lib/state/search.svelte"
     import { resetSetlistAddSort, songSortState } from "$lib/state/songSort.svelte"
     import storage from "$lib/storage/StorageManager.svelte"
     import { onDestroy, onMount } from "svelte"
@@ -17,7 +17,7 @@
 
     let filteredSongs = $derived.by(() => {
         if (!isSearching) return songs
-        return songs.filter((s) => s.name.toLowerCase().includes(searchQuery) || (s.metadata?.artist && s.metadata.artist.toLowerCase().includes(searchQuery)))
+        return songs.filter((song) => songMatchesSearch(song, searchQuery))
     })
 
     onMount(() => {

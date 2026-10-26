@@ -3,7 +3,7 @@
     import { pasteSharedFromClipboard } from "$lib/share/share"
     import { t } from "$lib/state/i18n.svelte"
     import { setActivePage, setActivePopup } from "$lib/state/menu.svelte"
-    import { searchState } from "$lib/state/search.svelte"
+    import { searchState, songMatchesSearch } from "$lib/state/search.svelte"
     import storage from "$lib/storage/StorageManager.svelte"
     import { isIosStandalone } from "$lib/utils/iosPwa"
 
@@ -24,7 +24,7 @@
 
     let matchedSongs = $derived.by(() => {
         if (!isSearching) return []
-        return storage.songs.filter((s) => s.name.toLowerCase().includes(searchQuery) || (s.metadata?.artist && s.metadata.artist.toLowerCase().includes(searchQuery)))
+        return storage.songs.filter((song) => songMatchesSearch(song, searchQuery))
     })
 
     let totalResults = $derived(matchedFolders.length + matchedLists.length + matchedSongs.length)

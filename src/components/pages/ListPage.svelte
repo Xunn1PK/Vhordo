@@ -2,7 +2,7 @@
     import type { ListSongDisplayItem } from "$lib/models/List"
     import { t } from "$lib/state/i18n.svelte"
     import { listEditingState, menuState, savedFullscreenPosition, setActivePage, setActivePopup } from "$lib/state/menu.svelte"
-    import { searchState } from "$lib/state/search.svelte"
+    import { searchState, songMatchesSearch } from "$lib/state/search.svelte"
     import storage from "$lib/storage/StorageManager.svelte"
     import { applyBatchMove, getDisplayList, handleContainerDragOver, handleContainerDrop, handleItemDragOver, handleItemDragStart, handleItemDrop, handlePointerDragStart, resetDragState, type ReorderState } from "$lib/utils/rearrange"
     import { onDestroy, untrack } from "svelte"
@@ -97,7 +97,7 @@
     let displaySongs = $derived.by(() => {
         const base = getDisplayList(listItems, reorderState)
         if (!isSearching) return base
-        return base.filter(({ item: songItem }) => songItem.name.toLowerCase().includes(searchQuery) || (songItem.song?.metadata?.artist && songItem.song.metadata.artist.toLowerCase().includes(searchQuery)))
+        return base.filter(({ item: songItem }) => songItem.name.toLowerCase().includes(searchQuery) || (songItem.song && songMatchesSearch(songItem.song, searchQuery)))
     })
 
     function onDragEnd() {
