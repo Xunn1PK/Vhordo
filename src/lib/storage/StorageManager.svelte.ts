@@ -4,6 +4,9 @@ import { Song } from "../models/Song"
 import { Settings } from "../models/Settings"
 import type { NonFunctionProperties } from "../utils/common"
 import { FileSystem } from "./FileSystem"
+import { getGitHubDatabaseConfig, loadGitHubDatabase } from "../integrations/githubDatabase"
+import { showToast } from "../state/toast.svelte"
+import { t } from "../state/i18n.svelte"
 
 let isLoaded = $state<boolean>(false)
 
@@ -96,6 +99,18 @@ class StorageManager {
         this.folders = folders
         this.lists = lists
         this.songs = songs
+
+        const githubConfig = getGitHubDatabaseConfig()
+        if (githubConfig) {
+            try {
+                const githubData = await loadGitHubDatabase(githubConfig)
+                if (githubData) this.importData(githubData)
+            } catch (error) {
+                console.error("Failed to load database from GitHub:", error)
+                showToast(t("settings", "github_load_error"), "error")
+            }
+        }
+
         isLoaded = true
 
         if (legacySettings) {

@@ -7,6 +7,8 @@
     import { getTheme, SUPPORTED_THEMES, type SupportedTheme } from "$lib/state/theme.svelte"
     import storage from "$lib/storage/StorageManager.svelte"
     import { integrationState } from "$lib/integrations/integrationState.svelte"
+    import { getGitHubDatabaseConfig, uploadGitHubDatabase } from "$lib/integrations/githubDatabase"
+    import { showToast } from "$lib/state/toast.svelte"
     import "@material/web/iconbutton/filled-tonal-icon-button.js"
     import "@material/web/select/outlined-select.js"
     import "@material/web/select/select-option.js"
@@ -242,6 +244,26 @@
             }
         })
     }
+
+    async function uploadDatabaseToGitHub() {
+        const config = getGitHubDatabaseConfig()
+        if (!config) {
+            setActivePopup("github_database")
+            return
+        }
+
+        try {
+            await uploadGitHubDatabase(config, {
+                folders: storage.folders,
+                lists: storage.lists,
+                songs: storage.songs
+            })
+            showToast(t("settings", "github_upload_success"), "success")
+        } catch (error) {
+            console.error("Failed to upload database to GitHub:", error)
+            showToast(t("settings", "github_upload_error"), "error")
+        }
+    }
 </script>
 
 <BaseDialog open icon={isSongSettings ? "tune" : "settings"} title={isSongSettings ? t("song_fullscreen", "settings_title") : t("settings", "title")} onclose={closeDialog}>
@@ -468,6 +490,18 @@
                             {/if}
                         </div>
                     {/each}
+                    <div class="integration-item">
+                        <span>GitHub</span>
+                        <div class="github-actions">
+                            <md-outlined-button onclick={() => setActivePopup("github_database")}>
+                                {getGitHubDatabaseConfig() ? t("settings", "github_configure") : t("settings", "connect")}
+                            </md-outlined-button>
+                            <md-filled-button disabled={!getGitHubDatabaseConfig()} onclick={uploadDatabaseToGitHub}>
+                                <span class="material-symbols-outlined" slot="icon">cloud_upload</span>
+                                {t("settings", "github_upload")}
+                            </md-filled-button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -542,6 +576,12 @@
         background: var(--md-sys-color-surface-container-low, rgba(0, 0, 0, 0.02));
         font-weight: 500;
         font-size: 0.95rem;
+    }
+
+    .github-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
     }
 
     .settings-section {
