@@ -18,10 +18,8 @@
     import "@material/web/switch/switch.js"
 
     let copyTimeout: ReturnType<typeof setTimeout> | undefined
-    let printTimeout: ReturnType<typeof setTimeout> | undefined
     onDestroy(() => {
         if (copyTimeout) clearTimeout(copyTimeout)
-        if (printTimeout) clearTimeout(printTimeout)
     })
 
     const isSong = $derived(popupState.popupId === "share_song")
@@ -190,8 +188,7 @@
 
     function handlePrint() {
         closeDialog()
-        clearTimeout(printTimeout)
-        printTimeout = setTimeout(() => {
+        setTimeout(() => {
             window.print()
         }, 150)
     }
