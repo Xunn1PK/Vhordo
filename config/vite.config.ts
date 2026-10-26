@@ -36,6 +36,7 @@ async function readRequestBody(req: IncomingMessage): Promise<Uint8Array | undef
 
 // https://vite.dev/config/
 export default defineConfig({
+    base: '/Chordo/',
     define: {
         __APP_VERSION__: JSON.stringify(pkg.version || "0.0.0")
     },
