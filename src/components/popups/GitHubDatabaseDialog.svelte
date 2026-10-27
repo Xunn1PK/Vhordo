@@ -69,9 +69,9 @@
             <md-filled-button onclick={saveConfiguration} disabled={isSaving || !repositoryUrl.trim() || !accessToken.trim()}>
                 {isSaving ? t("settings", "github_checking") : t("settings", "github_ok")}
             </md-filled-button>
-            <md-outlined-button class="delete-button" onclick={removeConfiguration} disabled={isSaving || !currentConfig}>
+            <md-filled-button class=delete-button onclick={removeConfiguration} disabled={isSaving || !currentConfig}>
                 {t("common", "delete")}
-            </md-outlined-button>
+            </md-filled-button>
         </div>
     {/snippet}
 </BaseDialog>
@@ -104,7 +104,8 @@
     }
 
     .delete-button {
-        color: var(--md-sys-color-error, #ba1a1a);
+        --md-filled-button-container-color: var(--md-sys-color-error, #ba1a1a);
+        --md-filled-button-label-text-color: #ffffff;
     }
 
     @media (max-width: 480px) {
