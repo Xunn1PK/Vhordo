@@ -78,7 +78,7 @@ export function setActivePage(menu: Pages, contentId?: string | null, customTitl
 
         if (menu === "home") {
             menuState.previousPages = []
-            if (isBrowser) history.replaceState({ type: "page", activePage: "home", contentId: null, customPageTitle: null }, "", "/")
+            if (isBrowser) history.replaceState({ type: "page", activePage: "home", contentId: null, customPageTitle: null }, "", window.location.href)
         } else if (currentState.activePage === "share_preview") {
             if (menuState.previousPages.length === 0) {
                 menuState.previousPages = [{ activePage: "home", contentId: null, customPageTitle: null }]
