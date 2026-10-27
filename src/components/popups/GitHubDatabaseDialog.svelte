@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { getGitHubDatabaseConfig, saveGitHubDatabaseConfig, validateGitHubDatabaseConfig } from "$lib/integrations/githubDatabase"
+    import { clearGitHubDatabaseConfig, getGitHubDatabaseConfig, saveGitHubDatabaseConfig, validateGitHubDatabaseConfig } from "$lib/integrations/githubDatabase"
     import { t } from "$lib/state/i18n.svelte"
     import { setActivePopup } from "$lib/state/menu.svelte"
     import { showToast } from "$lib/state/toast.svelte"
@@ -32,6 +32,14 @@
             isSaving = false
         }
     }
+
+    function removeConfiguration() {
+        if (isSaving || !currentConfig) return
+        clearGitHubDatabaseConfig()
+        storage.clearGitHubLocalChanges()
+        storage.dismissGitHubChanges()
+        setActivePopup("settings")
+    }
 </script>
 
 <BaseDialog open icon="cloud_sync" title={t("settings", "github_title")} maxWidth="min(480px, calc(100vw - 32px))" onclose={closeDialog}>
@@ -61,6 +69,9 @@
             <md-filled-button onclick={saveConfiguration} disabled={isSaving || !repositoryUrl.trim() || !accessToken.trim()}>
                 {isSaving ? t("settings", "github_checking") : t("settings", "github_ok")}
             </md-filled-button>
+            <md-outlined-button class="delete-button" onclick={removeConfiguration} disabled={isSaving || !currentConfig}>
+                {t("common", "delete")}
+            </md-outlined-button>
         </div>
     {/snippet}
 </BaseDialog>
@@ -87,9 +98,13 @@
 
     .github-form-actions {
         display: flex;
-        justify-content: flex-end;
+        justify-content: space-between;
         gap: 8px;
         width: 100%;
+    }
+
+    .delete-button {
+        color: var(--md-sys-color-error, #ba1a1a);
     }
 
     @media (max-width: 480px) {
