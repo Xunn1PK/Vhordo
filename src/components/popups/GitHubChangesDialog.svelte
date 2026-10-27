@@ -12,13 +12,13 @@
     function loadGitHubChanges() {
         const database = storage.pendingGitHubDatabase
         if (!database) return
-        storage.importData(database)
+        storage.importData(database, "github")
         storage.dismissGitHubChanges()
         setActivePopup(null)
     }
 </script>
 
-<BaseDialog open icon="cloud_sync" title={t("settings", "github_conflict_title")} onclose={keepLocalChanges}>
+<BaseDialog open icon="cloud_sync" title={t("settings", "github_conflict_title")} maxWidth="min(480px, calc(100vw - 32px))" onclose={keepLocalChanges}>
     <div class="conflict-content">{t("settings", "github_conflict_message")}</div>
 
     {#snippet actions()}
@@ -51,5 +51,11 @@
         width: 100%;
         min-width: 0;
         justify-content: center;
+    }
+
+    @media (max-width: 480px) {
+        .conflict-actions {
+            grid-template-columns: minmax(0, 1fr);
+        }
     }
 </style>

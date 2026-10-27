@@ -76,7 +76,7 @@ export async function cacheSharePayload(payload: SharePayload, shareId: string):
 function cacheShareData(id: string, hash: string, payload: SharePayload): void {
     storage.settings.shareCache = storage.settings.shareCache || {}
     storage.settings.shareCache[hash] = { id, createdAt: Date.now() }
-    storage.persist()
+    storage.persistSettings()
 
     shareDataCache.set(id, payload)
 }

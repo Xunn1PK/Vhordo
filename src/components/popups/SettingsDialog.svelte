@@ -71,7 +71,7 @@
                 background: color
             }
         })
-        storage.persist()
+        storage.persistSettings()
     }
 
     function selectChordColor(color: string) {
@@ -84,7 +84,7 @@
             }
         })
         storage.settings.apply()
-        storage.persist()
+        storage.persistSettings()
     }
 
     function handleCustomChordColorInput(e: Event) {
@@ -133,7 +133,7 @@
                 fontSize: val
             }
         })
-        storage.persist()
+        storage.persistSettings()
     }
 
     function selectPageAnimation(animation: PageSwitchAnimation) {
@@ -145,7 +145,7 @@
                 pageAnimation: animation
             }
         })
-        storage.persist()
+        storage.persistSettings()
     }
 
     function resetPaperDefaults() {
@@ -163,13 +163,13 @@
     function selectLanguage(locale: SupportedLocale) {
         storage.settings = new Settings({ ...storage.settings, locale })
         storage.settings.apply()
-        storage.persist()
+        storage.persistSettings()
     }
 
     function selectTheme(theme: SupportedTheme) {
         storage.settings = new Settings({ ...storage.settings, theme })
         storage.settings.apply()
-        storage.persist()
+        storage.persistSettings()
     }
 
     function exportBackup() {
@@ -258,6 +258,7 @@
                 lists: storage.lists,
                 songs: storage.songs
             })
+            storage.clearGitHubLocalChanges()
             showToast(t("settings", "github_upload_success"), "success")
         } catch (error) {
             console.error("Failed to upload database to GitHub:", error)
@@ -556,7 +557,8 @@
         flex-direction: column;
         gap: 16px;
         color: var(--md-sys-color-on-surface, #1d1b20);
-        min-width: 280px;
+        width: 100%;
+        min-width: 0;
     }
 
     .integrations-list {
@@ -570,12 +572,18 @@
         align-items: center;
         justify-content: space-between;
         gap: 12px;
+        min-width: 0;
         padding: 6px 14px;
         border-radius: 12px;
         border: 1px solid var(--md-sys-color-outline-variant, rgba(0, 0, 0, 0.12));
         background: var(--md-sys-color-surface-container-low, rgba(0, 0, 0, 0.02));
         font-weight: 500;
         font-size: 0.95rem;
+    }
+
+    .integration-item > span {
+        min-width: 0;
+        overflow-wrap: anywhere;
     }
 
     .github-actions {
@@ -777,5 +785,29 @@
         font-weight: 500;
         font-size: 0.95rem;
         color: var(--md-sys-color-on-surface, #1d1b20);
+    }
+
+    @media (max-width: 480px) {
+        .integration-item {
+            align-items: stretch;
+            flex-direction: column;
+            gap: 8px;
+            padding: 10px 12px;
+        }
+
+        .github-actions {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr);
+            width: 100%;
+        }
+
+        .github-actions :global(md-outlined-button),
+        .github-actions :global(md-filled-button),
+        .integration-item > :global(md-outlined-button),
+        .integration-item > :global(md-filled-button) {
+            width: 100%;
+            min-width: 0;
+            justify-content: center;
+        }
     }
 </style>

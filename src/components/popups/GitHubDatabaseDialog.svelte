@@ -22,7 +22,7 @@
             const config = { repositoryUrl, accessToken }
             const database = await validateGitHubDatabaseConfig(config)
             saveGitHubDatabaseConfig({ repositoryUrl: repositoryUrl.trim(), accessToken: accessToken.trim() })
-            if (database) storage.importData(database)
+            if (database) storage.importData(database, "github")
             setActivePopup("settings")
             showToast(t("settings", "github_config_saved"), "success")
         } catch (error) {
@@ -34,7 +34,7 @@
     }
 </script>
 
-<BaseDialog open icon="cloud_sync" title={t("settings", "github_title")} onclose={closeDialog}>
+<BaseDialog open icon="cloud_sync" title={t("settings", "github_title")} maxWidth="min(480px, calc(100vw - 32px))" onclose={closeDialog}>
     <div class="github-form">
         <md-outlined-text-field
             label={t("settings", "github_repo_link")}
@@ -56,10 +56,12 @@
     </div>
 
     {#snippet actions()}
-        <md-text-button onclick={closeDialog} disabled={isSaving}>{t("settings", "github_cancel")}</md-text-button>
-        <md-filled-button onclick={saveConfiguration} disabled={isSaving || !repositoryUrl.trim() || !accessToken.trim()}>
-            {isSaving ? t("settings", "github_checking") : t("settings", "github_ok")}
-        </md-filled-button>
+        <div class="github-form-actions">
+            <md-text-button onclick={closeDialog} disabled={isSaving}>{t("settings", "github_cancel")}</md-text-button>
+            <md-filled-button onclick={saveConfiguration} disabled={isSaving || !repositoryUrl.trim() || !accessToken.trim()}>
+                {isSaving ? t("settings", "github_checking") : t("settings", "github_ok")}
+            </md-filled-button>
+        </div>
     {/snippet}
 </BaseDialog>
 
@@ -68,7 +70,8 @@
         display: flex;
         flex-direction: column;
         gap: 12px;
-        min-width: 280px;
+        width: 100%;
+        min-width: 0;
     }
 
     .github-form md-outlined-text-field {
@@ -79,5 +82,26 @@
         margin: 0;
         color: var(--md-sys-color-on-surface-variant, #49454f);
         font-size: 0.875rem;
+        overflow-wrap: anywhere;
+    }
+
+    .github-form-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        width: 100%;
+    }
+
+    @media (max-width: 480px) {
+        .github-form-actions {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        .github-form-actions :global(md-text-button),
+        .github-form-actions :global(md-filled-button) {
+            width: 100%;
+            justify-content: center;
+        }
     }
 </style>

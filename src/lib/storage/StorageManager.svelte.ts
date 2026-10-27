@@ -9,6 +9,7 @@ import { showToast } from "../state/toast.svelte"
 import { t } from "../state/i18n.svelte"
 
 let isLoaded = $state<boolean>(false)
+const GITHUB_LOCAL_CHANGES_KEY = "chordo_github_local_changes"
 
 type NonFunctionKeys<T> = {
     [K in keyof T]: T[K] extends Function ? never : K
@@ -65,7 +66,37 @@ class StorageManager {
     ///
 
     persist() {
+        this.markGitHubLocalChanges()
         this.save()
+    }
+
+    persistSettings() {
+        this.save()
+    }
+
+    private markGitHubLocalChanges(): void {
+        try {
+            if (typeof localStorage !== "undefined") localStorage.setItem(GITHUB_LOCAL_CHANGES_KEY, "true")
+        } catch (error) {
+            console.error("Failed to mark local GitHub database changes:", error)
+        }
+    }
+
+    private hasGitHubLocalChanges(): boolean {
+        try {
+            return typeof localStorage !== "undefined" && localStorage.getItem(GITHUB_LOCAL_CHANGES_KEY) === "true"
+        } catch (error) {
+            console.error("Failed to read local GitHub database change flag:", error)
+            return false
+        }
+    }
+
+    clearGitHubLocalChanges(): void {
+        try {
+            if (typeof localStorage !== "undefined") localStorage.removeItem(GITHUB_LOCAL_CHANGES_KEY)
+        } catch (error) {
+            console.error("Failed to clear local GitHub database change flag:", error)
+        }
     }
 
     private hasChanges = false
@@ -111,14 +142,15 @@ class StorageManager {
         this.songs = songs
 
         const hasLocalDatabase = !!parsed && (Array.isArray(parsed.folders) || Array.isArray(parsed.lists) || Array.isArray(parsed.songs))
+        const hasGitHubLocalChanges = this.hasGitHubLocalChanges()
         const githubConfig = getGitHubDatabaseConfig()
         if (githubConfig) {
             try {
                 const githubData = await loadGitHubDatabase(githubConfig)
-                if (githubData && hasLocalDatabase && JSON.stringify(this.getDatabaseData()) !== JSON.stringify(githubData)) {
+                if (githubData && hasGitHubLocalChanges && hasLocalDatabase && JSON.stringify(this.getDatabaseData()) !== JSON.stringify(githubData)) {
                     this.pendingGitHubDatabase = githubData
                 } else if (githubData) {
-                    this.importData(githubData)
+                    this.importData(githubData, "github")
                 }
             } catch (error) {
                 console.error("Failed to load database from GitHub:", error)
@@ -138,7 +170,7 @@ class StorageManager {
         }
     }
 
-    importData(data: Partial<DatabaseData>) {
+    importData(data: Partial<DatabaseData>, source: "local" | "github" = "local") {
         if (data.folders && Array.isArray(data.folders)) {
             this.folders = data.folders.map((f) => new Folder(f as any))
         }
@@ -151,6 +183,8 @@ class StorageManager {
         this.refreshSongs()
         this.refreshLists()
         this.refreshFolders()
+        if (source === "github") this.clearGitHubLocalChanges()
+        else this.markGitHubLocalChanges()
         this.save()
     }
 
@@ -161,7 +195,7 @@ class StorageManager {
         this.refreshSongs()
         this.refreshLists()
         this.refreshFolders()
-        this.save()
+        this.persist()
     }
 
     ///
@@ -189,35 +223,35 @@ class StorageManager {
 
     addFolder(folder: Folder) {
         this.folders.push(folder instanceof Folder ? folder : new Folder(folder as any))
-        this.save()
+        this.persist()
     }
 
     addList(list: List) {
         this.lists.push(list instanceof List ? list : new List(list as any))
-        this.save()
+        this.persist()
     }
 
     addSong(song: Song) {
         this.songs.push(song instanceof Song ? song : new Song(song as any))
-        this.save()
+        this.persist()
     }
 
     updateSong(song: Song) {
         const nextSong = new Song(song)
         this.songs = this.songs.map((s) => (s.id === song.id ? nextSong : s))
-        this.save()
+        this.persist()
     }
 
     updateList(list: List) {
         const nextList = new List(list)
         this.lists = this.lists.map((l) => (l.id === list.id ? nextList : l))
-        this.save()
+        this.persist()
     }
 
     updateFolder(folder: Folder) {
         const nextFolder = new Folder(folder)
         this.folders = this.folders.map((f) => (f.id === folder.id ? nextFolder : f))
-        this.save()
+        this.persist()
     }
 
     async deleteSong(songId: string) {
@@ -230,7 +264,7 @@ class StorageManager {
 
         // Remove from songs array
         this.songs = this.songs.filter((s) => s.id !== songId)
-        this.save()
+        this.persist()
     }
 
     deleteList(listId: string) {
@@ -242,7 +276,7 @@ class StorageManager {
         }
         this.folders = [...this.folders]
 
-        this.save()
+        this.persist()
     }
 
     deleteFolder(folderId: string) {
@@ -261,7 +295,7 @@ class StorageManager {
         }
 
         this.folders = this.folders.filter((f) => f.id !== folderId)
-        this.save()
+        this.persist()
     }
 
     refreshSongs() {
