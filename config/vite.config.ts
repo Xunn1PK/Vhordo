@@ -117,8 +117,8 @@ export default defineConfig({
                 background_color: "#feddc2",
                 display: "standalone",
                 orientation: "any",
-                start_url: "/",
-                scope: "/",
+                start_url: "/Vhordo/",
+                scope: "/Vhordo/",
                 icons: [
                     {
                         src: "icons/icon.svg",
