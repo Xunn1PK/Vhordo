@@ -258,8 +258,8 @@
         "import_confirm_btn": "Import"
     },
     "about": {
-        "tagline": "Made by ChurchApps, forked by Xunn1PK",
-        "version": "Forked Version",
+        "tagline": "Chord Sheet Manager",
+        "version": "Version",
         "desc": "Organize, transpose, annotate, and view chord sheets.",
         "landing_page": "Features & Overview",
         "source_code": "Source Code",
