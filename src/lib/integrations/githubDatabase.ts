@@ -22,7 +22,7 @@ export interface GitHubDatabase {
 }
 
 const CONFIG_KEY = "chordo_github_database_config"
-const DATABASE_FILE = "chordo-database.json"
+const DATABASE_FILE = "vhordo-database.json"
 const API_BASE = "https://api.github.com"
 
 export function getGitHubDatabaseConfig(): GitHubDatabaseConfig | null {
