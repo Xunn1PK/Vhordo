@@ -33,7 +33,7 @@ function scoreName(name: string | undefined | null, q: string): number {
  */
 export function getSearchableSongContent(content: string | undefined | null): string {
     if (!content) return ""
-    return content.replace(/\{[^}]*\}|\[[^\]]*\]/g, " ").replace(/\s+/g, " ").trim()
+    return content.replace(/\{[^}]*\}|\[[^\]]*\]/g, "").replace(/\s+/g, " ").trim()
 }
 
 /**
