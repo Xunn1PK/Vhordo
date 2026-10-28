@@ -85,7 +85,7 @@
                 label={t("settings", "github_repo_link")}
                 type="text"
                 autocomplete="off"
-                placeholder="Xunn1PK/preobrazhenie-songs"
+                placeholder="example/repository"
                 value={repositoryPath}
                 oninput={(event: Event) => (repositoryPath = (event.currentTarget as HTMLInputElement).value)}
                 required
@@ -93,7 +93,6 @@
             <md-outlined-text-field
                 label={t("settings", "github_access_token")}
                 type="password"
-                autocomplete="new-password"
                 value={accessToken}
                 oninput={(event: Event) => (accessToken = (event.currentTarget as HTMLInputElement).value)}
                 required
