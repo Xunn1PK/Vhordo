@@ -251,6 +251,7 @@
             setActivePopup("github_database")
             return
         }
+        if (config.mode === "raw") return
 
         try {
             await uploadGitHubDatabase(config, {
@@ -497,7 +498,7 @@
                             <md-outlined-button onclick={() => setActivePopup("github_database")}>
                                 {getGitHubDatabaseConfig() ? t("settings", "github_configure") : t("settings", "connect")}
                             </md-outlined-button>
-                            <md-filled-button disabled={!getGitHubDatabaseConfig()} onclick={uploadDatabaseToGitHub}>
+                            <md-filled-button disabled={getGitHubDatabaseConfig()?.mode !== "repository"} onclick={uploadDatabaseToGitHub}>
                                 <span class="material-symbols-outlined" slot="icon">cloud_upload</span>
                                 {t("settings", "github_upload")}
                             </md-filled-button>

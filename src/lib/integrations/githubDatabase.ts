@@ -2,10 +2,18 @@ import { Folder } from "../models/Folder"
 import { List } from "../models/List"
 import { Song } from "../models/Song"
 
-export interface GitHubDatabaseConfig {
+export interface GitHubRepositoryDatabaseConfig {
+    mode: "repository"
     repositoryUrl: string
     accessToken: string
 }
+
+export interface GitHubRawDatabaseConfig {
+    mode: "raw"
+    rawUrl: string
+}
+
+export type GitHubDatabaseConfig = GitHubRepositoryDatabaseConfig | GitHubRawDatabaseConfig
 
 export interface GitHubDatabase {
     folders: Folder[]
@@ -22,9 +30,18 @@ export function getGitHubDatabaseConfig(): GitHubDatabaseConfig | null {
     try {
         const value = localStorage.getItem(CONFIG_KEY)
         if (!value) return null
-        const config = JSON.parse(value) as Partial<GitHubDatabaseConfig>
-        if (typeof config.repositoryUrl !== "string" || typeof config.accessToken !== "string") return null
-        return { repositoryUrl: config.repositoryUrl, accessToken: config.accessToken }
+        const config = JSON.parse(value) as Partial<GitHubDatabaseConfig> & { repositoryUrl?: unknown; accessToken?: unknown; rawUrl?: unknown }
+        if (config.mode === "raw" && typeof config.rawUrl === "string") {
+            return { mode: "raw", rawUrl: config.rawUrl }
+        }
+        if (
+            (config.mode === undefined || config.mode === "repository") &&
+            typeof config.repositoryUrl === "string" &&
+            typeof config.accessToken === "string"
+        ) {
+            return { mode: "repository", repositoryUrl: config.repositoryUrl, accessToken: config.accessToken }
+        }
+        return null
     } catch (error) {
         console.error("Failed to read GitHub database configuration:", error)
         return null
@@ -39,7 +56,7 @@ export function clearGitHubDatabaseConfig(): void {
     localStorage.removeItem(CONFIG_KEY)
 }
 
-function getRepository(config: GitHubDatabaseConfig): { owner: string; repo: string } {
+function getRepository(config: GitHubRepositoryDatabaseConfig): { owner: string; repo: string } {
     let url: URL
     try {
         url = new URL(config.repositoryUrl.trim())
@@ -56,7 +73,7 @@ function getRepository(config: GitHubDatabaseConfig): { owner: string; repo: str
     return { owner: parts[0], repo }
 }
 
-async function request<T>(path: string, config: GitHubDatabaseConfig, init?: RequestInit): Promise<T> {
+async function request<T>(path: string, config: GitHubRepositoryDatabaseConfig, init?: RequestInit): Promise<T> {
     const response = await fetch(`${API_BASE}${path}`, {
         ...init,
         headers: {
@@ -116,7 +133,7 @@ function isObject(value: unknown): value is Record<string, unknown> {
     return value !== null && typeof value === "object" && !Array.isArray(value)
 }
 
-async function getDatabaseFile(config: GitHubDatabaseConfig, path: string): Promise<{ content: string; sha: string } | null> {
+async function getDatabaseFile(config: GitHubRepositoryDatabaseConfig, path: string): Promise<{ content: string; sha: string } | null> {
     const response = await fetch(`${API_BASE}${path}`, {
         headers: {
             Accept: "application/vnd.github+json",
@@ -136,7 +153,38 @@ async function getDatabaseFile(config: GitHubDatabaseConfig, path: string): Prom
     return { content: decodeBase64(file.content), sha: file.sha }
 }
 
+function getRawDatabaseUrl(config: GitHubRawDatabaseConfig): string {
+    let url: URL
+    try {
+        url = new URL(config.rawUrl.trim())
+    } catch {
+        throw new Error("Invalid raw GitHub URL")
+    }
+
+    if (
+        url.protocol !== "https:" ||
+        url.hostname !== "raw.githubusercontent.com" ||
+        url.username ||
+        url.password ||
+        url.pathname.split("/").filter(Boolean).length < 4
+    ) {
+        throw new Error("Invalid raw GitHub URL")
+    }
+    return url.toString()
+}
+
+async function fetchRawDatabase(config: GitHubRawDatabaseConfig): Promise<GitHubDatabase> {
+    const url = getRawDatabaseUrl(config)
+    const response = await fetch(url)
+    if (!response.ok) {
+        throw new Error(`Raw GitHub request failed (${response.status}): ${await response.text()}`)
+    }
+    return parseDatabase(await response.json())
+}
+
 export async function validateGitHubDatabaseConfig(config: GitHubDatabaseConfig): Promise<GitHubDatabase | null> {
+    if (config.mode === "raw") return fetchRawDatabase({ ...config, rawUrl: config.rawUrl.trim() })
+
     const normalized = { ...config, repositoryUrl: config.repositoryUrl.trim(), accessToken: config.accessToken.trim() }
     if (!normalized.accessToken) throw new Error("GitHub access token is required")
     const { owner, repo } = getRepository(normalized)
@@ -148,12 +196,16 @@ export async function validateGitHubDatabaseConfig(config: GitHubDatabaseConfig)
 }
 
 export async function loadGitHubDatabase(config: GitHubDatabaseConfig): Promise<GitHubDatabase | null> {
+    if (config.mode === "raw") return fetchRawDatabase(config)
+
     const { owner, repo } = getRepository(config)
     const file = await getDatabaseFile(config, getContentPath(owner, repo))
     return file ? parseDatabase(JSON.parse(file.content)) : null
 }
 
 export async function uploadGitHubDatabase(config: GitHubDatabaseConfig, database: GitHubDatabase): Promise<void> {
+    if (config.mode === "raw") throw new Error("Raw GitHub database links are read-only")
+
     const { owner, repo } = getRepository(config)
     const path = getContentPath(owner, repo)
     const currentFile = await getDatabaseFile(config, path)
