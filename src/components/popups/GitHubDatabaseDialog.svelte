@@ -15,7 +15,11 @@
 
     const currentConfig = getGitHubDatabaseConfig()
     let useRawLink = $state(currentConfig?.mode === "raw")
-    let repositoryUrl = $state(currentConfig?.mode === "repository" ? currentConfig.repositoryUrl : "")
+    let repositoryPath = $state(
+        currentConfig?.mode === "repository"
+            ? currentConfig.repositoryUrl.replace(/^https:\/\/github\.com\//i, "").replace(/\.git\/?$/, "")
+            : ""
+    )
     let accessToken = $state(currentConfig?.mode === "repository" ? currentConfig.accessToken : "")
     let rawUrl = $state(currentConfig?.mode === "raw" ? currentConfig.rawUrl : "")
     let isSaving = $state(false)
@@ -30,7 +34,7 @@
         try {
             const config: GitHubDatabaseConfig = useRawLink
                 ? { mode: "raw", rawUrl: rawUrl.trim() }
-                : { mode: "repository", repositoryUrl: repositoryUrl.trim(), accessToken: accessToken.trim() }
+                : { mode: "repository", repositoryUrl: `https://github.com/${repositoryPath.trim()}`, accessToken: accessToken.trim() }
             const database = await validateGitHubDatabaseConfig(config)
             saveGitHubDatabaseConfig(config)
             if (database) storage.importData(database, "github")
@@ -79,10 +83,11 @@
         {:else}
             <md-outlined-text-field
                 label={t("settings", "github_repo_link")}
-                type="url"
-                autocomplete="url"
-                value={repositoryUrl}
-                oninput={(event: Event) => (repositoryUrl = (event.currentTarget as HTMLInputElement).value)}
+                type="text"
+                autocomplete="off"
+                placeholder="Xunn1PK/preobrazhenie-songs"
+                value={repositoryPath}
+                oninput={(event: Event) => (repositoryPath = (event.currentTarget as HTMLInputElement).value)}
                 required
             ></md-outlined-text-field>
             <md-outlined-text-field
@@ -100,7 +105,7 @@
     {#snippet actions()}
         <div class="github-form-actions">
             <md-text-button onclick={closeDialog} disabled={isSaving}>{t("settings", "github_cancel")}</md-text-button>
-            <md-filled-button onclick={saveConfiguration} disabled={isSaving || (useRawLink ? !rawUrl.trim() : !repositoryUrl.trim() || !accessToken.trim())}>
+            <md-filled-button onclick={saveConfiguration} disabled={isSaving || (useRawLink ? !rawUrl.trim() : !repositoryPath.trim() || !accessToken.trim())}>
                 {isSaving ? t("settings", "github_checking") : t("settings", "github_ok")}
             </md-filled-button>
             <md-filled-button class=delete-button onclick={removeConfiguration} disabled={isSaving || !currentConfig}>

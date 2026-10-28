@@ -21,7 +21,7 @@ export interface GitHubDatabase {
     songs: Song[]
 }
 
-const CONFIG_KEY = "chordo_github_database_config"
+const CONFIG_KEY = "vhordo_github_database_config"
 const DATABASE_FILE = "vhordo-database.json"
 const API_BASE = "https://api.github.com"
 

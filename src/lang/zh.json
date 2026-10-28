@@ -228,7 +228,7 @@
         "github_keep_local": "保留本地版本",
         "github_load_github": "从 GitHub 加载",
         "github_upload_local": "上传到 GitHub",
-        "github_repo_link": "GitHub 仓库链接",
+        "github_repo_link": "GitHub 仓库 (所有者/名称)",
         "github_access_token": "GitHub 访问令牌",
         "github_token_help": "请使用具有仓库 Contents 读取和写入权限的令牌。令牌将保存在此浏览器中。",
         "github_use_raw_link": "使用原始链接（只读）",

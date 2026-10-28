@@ -228,7 +228,7 @@
         "github_keep_local": "로컬 버전 유지",
         "github_load_github": "GitHub에서 불러오기",
         "github_upload_local": "GitHub에 업로드",
-        "github_repo_link": "GitHub 저장소 링크",
+        "github_repo_link": "GitHub 저장소 (OWNER/NAME)",
         "github_access_token": "GitHub 액세스 토큰",
         "github_token_help": "저장소 Contents 읽기 및 쓰기 권한이 있는 토큰을 사용하세요. 이 브라우저에 저장됩니다.",
         "github_use_raw_link": "Raw 링크 사용 (읽기 전용)",

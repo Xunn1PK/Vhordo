@@ -228,7 +228,7 @@
         "github_keep_local": "Behåll lokalt",
         "github_load_github": "Hämta från GitHub",
         "github_upload_local": "Ladda upp till GitHub",
-        "github_repo_link": "Länk till GitHub-repository",
+        "github_repo_link": "GitHub-repository (ÄGARE/NAMN)",
         "github_access_token": "GitHub-åtkomsttoken",
         "github_token_help": "Använd en token med läs- och skrivåtkomst till repository-innehållet. Den sparas i den här webbläsaren.",
         "github_use_raw_link": "Använd raw-länk (skrivskyddat)",

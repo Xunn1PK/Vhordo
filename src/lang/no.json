@@ -228,7 +228,7 @@
         "github_keep_local": "Behold lokalt",
         "github_load_github": "Last inn fra GitHub",
         "github_upload_local": "Last opp til GitHub",
-        "github_repo_link": "GitHub-repositorylenke",
+        "github_repo_link": "GitHub-repository (EIER/NAVN)",
         "github_access_token": "GitHub-tilgangstoken",
         "github_token_help": "Bruk et token med lese- og skrivetilgang til repository-innhold. Det lagres i denne nettleseren.",
         "github_use_raw_link": "Bruk raw-lenke (skrivebeskyttet)",

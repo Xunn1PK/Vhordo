@@ -228,7 +228,7 @@
         "github_keep_local": "Оставить локальную",
         "github_load_github": "Загрузить с GitHub",
         "github_upload_local": "Загрузить на GitHub",
-        "github_repo_link": "Ссылка на репозиторий GitHub",
+        "github_repo_link": "Репозиторий GitHub (ВЛАДЕЛЕЦ/НАЗВАНИЕ)",
         "github_access_token": "Токен доступа GitHub",
         "github_token_help": "Используйте токен с правами чтения и записи Contents репозитория. Он будет сохранён в этом браузере.",
         "github_use_raw_link": "Использовать сырую ссылку (только чтение)",

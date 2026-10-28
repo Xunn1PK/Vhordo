@@ -228,7 +228,7 @@
         "github_keep_local": "ローカルを保持",
         "github_load_github": "GitHub から読み込む",
         "github_upload_local": "GitHub にアップロード",
-        "github_repo_link": "GitHub リポジトリのリンク",
+        "github_repo_link": "GitHub リポジトリ (OWNER/NAME)",
         "github_access_token": "GitHub アクセストークン",
         "github_token_help": "リポジトリの Contents の読み取り・書き込み権限を持つトークンを使用してください。このブラウザーに保存されます。",
         "github_use_raw_link": "Raw リンクを使用（読み取り専用）",

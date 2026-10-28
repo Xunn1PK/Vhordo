@@ -228,7 +228,7 @@
         "github_keep_local": "Lokaal behouden",
         "github_load_github": "Laden van GitHub",
         "github_upload_local": "Uploaden naar GitHub",
-        "github_repo_link": "GitHub-repositorylink",
+        "github_repo_link": "GitHub-repository (EIGENAAR/NAAM)",
         "github_access_token": "GitHub-toegangstoken",
         "github_token_help": "Gebruik een token met lees- en schrijftoegang tot de inhoud van de repository. Het wordt in deze browser opgeslagen.",
         "github_use_raw_link": "Raw-link gebruiken (alleen lezen)",
