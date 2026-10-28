@@ -22,7 +22,6 @@ function normalizeSearchText(value: string | undefined | null): string {
         .normalize("NFKC")
         .toLowerCase()
         .replace(/ё/g, "е")
-        .replace("'", "")
         .replace(/[^\p{L}\p{N}]+/gu, " ")
         .trim()
         .replace(/\s+/g, " ")
