@@ -7,6 +7,143 @@ import { isChordLine } from "$lib/chords/chordproConverter"
 import { getId } from "$lib/utils/common"
 import { showToast } from "$lib/state/toast.svelte"
 
+const _pre_chorus: Record<string, RegExp> = {
+    da: /(?:pre[-_\s]?(?:chorus|kor|refreng|ref)|præ[-_\s]?(?:kor|refreng|ref))\b/i,
+    de: /(?:pre[-_\s]?(?:chorus|refrain|ref)|vor[-_\s]?(?:refrain|chorus|ref))\b/i,
+    en: /(?:pre[-_\s]?(?:chorus|ref))\b/i,
+    es: /(?:pre[-_\s]?(?:estribillo|coro|chorus|ref))\b/i,
+    fr: /(?:pr[eé][-_\s]?(?:refrain|chorus|ref))\b/i,
+    it: /(?:pre[-_\s]?(?:ritornello|coro|chorus|ref))\b/i,
+    ja: /(?:プレ[-_\s]?(?:コーラス|サビ)|Bメロ|pre[-_\s]?chorus|pre[-_\s]?ref)(?!\p{L})/iu,
+    ko: /(?:프리[-_\s]?(?:코러스|후렴)|pre[-_\s]?chorus|pre[-_\s]?ref)(?!\p{L})/iu,
+    nl: /(?:pre[-_\s]?(?:refrein|koor|chorus|ref))\b/i,
+    no: /(?:pre[-_\s]?(?:refreng|kor|chorus|ref)|for[-_\s]?refreng)\b/i,
+    pt: /(?:pr[eé][-_\s]?(?:refrão|coro|chorus|ref))(?!\p{L})/iu,
+    ru: /(?:пред[-_\s]?припев|пре[-_\s]?(?:припев|хорус)|pre[-_\s]?chorus)(?!\p{L})/iu,
+    sv: /(?:pre[-_\s]?(?:refräng|kör|chorus|ref)|för[-_\s]?refräng)\b/i,
+    uk: /(?:пред[-_\s]?приспів|пре[-_\s]?(?:приспів|хорус)|pre[-_\s]?chorus)(?!\p{L})/iu,
+    zh: /(?:[预預前]副歌|[导導]歌|pre[-_\s]?chorus)(?!\p{L})/iu,
+}
+const _chorus: Record<string, RegExp> = {
+    da: /(?:omkvæd|refræn|chorus|kor|ref)\b/i,
+    de: /(?:refrain|chorus|chor|ref)\b/i,
+    en: /(?:chorus|refrain|ref)\b/i,
+    es: /(?:estribillo|coro|chorus|ref)\b/i,
+    fr: /(?:refrain|chorus|ref)\b/i,
+    it: /(?:ritornello|coro|chorus|ref)\b/i,
+    ja: /(?:コーラス|サビ|リフレイン|chorus|ref)(?!\p{L})/iu,
+    ko: /(?:코러스|후렴구|후렴|chorus|ref)(?!\p{L})/iu,
+    nl: /(?:refrein|koor|chorus|ref)\b/i,
+    no: /(?:refreng|kor|chorus|ref)\b/i,
+    pt: /(?:refrão|coro|chorus|ref)\b/i,
+    ru: /(?:припев|рефрен|хорус|chorus|ref)(?!\p{L})/iu,
+    sv: /(?:refräng|kör|chorus|ref)\b/i,
+    uk: /(?:приспів|рефрен|хорус|chorus|ref)(?!\p{L})/iu,
+    zh: /(?:副歌|chorus|ref)(?!\p{L})/iu,
+}
+const _bridge: Record<string, RegExp> = {
+    da: /(?:bridge|bro|mellemstykke)\b/i,
+    de: /(?:bridge|brücke|mittelteil)\b/i,
+    en: /(?:bridge|bro)\b/i,
+    es: /(?:puente|bridge)\b/i,
+    fr: /(?:pont|bridge)\b/i,
+    it: /(?:ponte|bridge)\b/i,
+    ja: /(?:ブリッジ|Cメロ|bridge)(?!\p{L})/iu,
+    ko: /(?:브릿지|브리지|bridge)(?!\p{L})/iu,
+    nl: /(?:brug|bridge)\b/i,
+    no: /(?:bridge|bro|mellomparti)\b/i,
+    pt: /(?:ponte|bridge)\b/i,
+    ru: /(?:бридж|мост|bridge)(?!\p{L})/iu,
+    sv: /(?:bridge|brygga|bro)\b/i,
+    uk: /(?:брідж|міст|bridge)(?!\p{L})/iu,
+    zh: /(?:[桥橋]段|bridge)(?!\p{L})/iu,
+}
+const _intro: Record<string, RegExp> = {
+    da: /(?:intro(?:duktion)?|indledning)\b/i,
+    de: /(?:intro(?:duktion)?|einleitung|vorspiel)\b/i,
+    en: /(?:intro(?:duction)?)\b/i,
+    es: /(?:intro(?:ducci[oó]n)?)\b/i,
+    fr: /(?:intro(?:duction)?)\b/i,
+    it: /(?:intro(?:duzione)?)\b/i,
+    ja: /(?:イントロ(?:ダクション)?|前奏|intro(?:duction)?)(?!\p{L})/iu,
+    ko: /(?:인트로|전주|intro(?:duction)?)(?!\p{L})/iu,
+    nl: /(?:intro(?:ductie)?|inleiding)\b/i,
+    no: /(?:intro(?:duksjon)?|innledning)\b/i,
+    pt: /(?:intro(?:du[cç][aã]o)?)\b/i,
+    ru: /(?:интро|вступление|введение|intro)(?!\p{L})/iu,
+    sv: /(?:intro(?:duktion)?|inledning)\b/i,
+    uk: /(?:інтро|вступ|intro)(?!\p{L})/iu,
+    zh: /(?:前奏|引子|intro(?:duction)?)(?!\p{L})/iu,
+}
+const _outro: Record<string, RegExp> = {
+    da: /(?:outro|afslutning|slutning|coda)\b/i,
+    de: /(?:outro|ende|schluss|nachspiel|coda)\b/i,
+    en: /(?:outro|ending|coda)\b/i,
+    es: /(?:outro|final|conclusi[oó]n|coda|ending)\b/i,
+    fr: /(?:outro|fin|conclusion|final|coda)\b/i,
+    it: /(?:outro|finale|fine|conclusione|coda)\b/i,
+    ja: /(?:アウトロ|エンディング|後奏|コーダ|outro|ending|coda)(?!\p{L})/iu,
+    ko: /(?:아웃트로|엔딩|후주|코다|outro|ending|coda)(?!\p{L})/iu,
+    nl: /(?:outro|einde|slot|coda)\b/i,
+    no: /(?:outro|avslutning|slutt|coda)\b/i,
+    pt: /(?:outro|final|encerramento|conclusão|coda)\b/i,
+    ru: /(?:аутро|концовка|окончание|финал|кода|outro|ending|coda)(?!\p{L})/iu,
+    sv: /(?:outro|avslutning|slut|coda)\b/i,
+    uk: /(?:аутро|кінцівка|закінчення|фінал|кода|outro|ending|coda)(?!\p{L})/iu,
+    zh: /(?:尾奏|[结結]尾|尾[声聲]|outro|ending|coda)(?!\p{L})/iu,
+}
+const _tag: Record<string, RegExp> = {
+    da: /(?:tag|hook|vamp|spoken|omkvæd|tale)\b/i,
+    de: /(?:tag|hook|vamp|spoken|gesprochen)\b/i,
+    en: /(?:tag|hook|vamp|spoken)\b/i,
+    es: /(?:tag|hook|vamp|spoken|hablado)\b/i,
+    fr: /(?:tag|hook|vamp|spoken|parlé)\b/i,
+    it: /(?:tag|hook|vamp|spoken|parlato)\b/i,
+    ja: /(?:tag|hook|vamp|spoken|フック|語り|セリフ)\b/i,
+    ko: /(?:tag|hook|vamp|spoken|후크|내레이션|대사)\b/i,
+    nl: /(?:tag|hook|vamp|spoken|gesproken)\b/i,
+    no: /(?:tag|hook|vamp|spoken|snakket)\b/i,
+    pt: /(?:tag|hook|vamp|spoken|falado)\b/i,
+    ru: /(?:tag|hook|vamp|spoken|тег|хук|разговорный|речь)\b/i,
+    sv: /(?:tag|hook|vamp|spoken|talat)\b/i,
+    uk: /(?:tag|hook|vamp|spoken|тег|хук|розмовний|речитатив)\b/i,
+    zh: /(?:tag|hook|vamp|spoken|钩子|说唱|独白)\b/i,
+}
+const _break: Record<string, RegExp> = {
+    da: /(?:break|solo|instrumental|mellemspil|interlude|pause)\b/i,
+    de: /(?:break|solo|instrumental|zwischenspiel|interlude)\b/i,
+    en: /(?:break|solo|instrumental|interlude)\b/i,
+    es: /(?:break|solo|instrumental|interludio|intermedio)\b/i,
+    fr: /(?:break|solo|instrumental|interlude|interm[eè]de)\b/i,
+    it: /(?:break|assolo|solo|strumentale|instrumental|interludio|intermezzo)\b/i,
+    ja: /(?:ブレイク|ソロ|間奏|インスト(?:ゥルメンタル)?|インタールード|break|solo|instrumental|interlude)(?!\p{L})/iu,
+    ko: /(?:브레이크|솔로|간주|인스트루멘탈|인터루드|break|solo|instrumental|interlude)(?!\p{L})/iu,
+    nl: /(?:break|solo|instrumentaal|instrumental|tussenspel|interlude)\b/i,
+    no: /(?:break|solo|instrumental(?:t)?|mellomspill|interlude)\b/i,
+    pt: /(?:break|solo|instrumental|interl[uú]dio|intermezzo)\b/i,
+    ru: /(?:брейк|соло|инструментал(?:ьный)?|проигрыш|интерлюдия|break|solo|instrumental|interlude)(?!\p{L})/iu,
+    sv: /(?:break|solo|instrumental|mellanspel|interlude)\b/i,
+    uk: /(?:брейк|соло|інструментал(?:ьний)?|програш|інтерлюдія|break|solo|instrumental|interlude)(?!\p{L})/iu,
+    zh: /(?:[间間]奏|[独獨]奏|器[乐樂]|break|solo|instrumental|interlude)(?!\p{L})/iu,
+}
+const _verse: Record<string, RegExp> = {
+    da: /(?:vers|strofe|verse|v\d+)\b/i,
+    de: /(?:strophe|vers|verse|v\d+)\b/i,
+    en: /(?:verse|vers|v\d+)\b/i,
+    es: /(?:estrofa|verso|verse|v\d+)\b/i,
+    fr: /(?:couplet|strophe|verse|v\d+)\b/i,
+    it: /(?:strofa|verso|verse|v\d+)\b/i,
+    ja: /(?:Aメロ|[バヴ]ース|\d+番|verse|v\d+)(?!\p{L})/iu,
+    ko: /(?:\d+절|벌스|verse|v\d+)(?!\p{L})/iu,
+    nl: /(?:couplet|vers|strofe|verse|v\d+)\b/i,
+    no: /(?:vers|strofe|verse|v\d+)\b/i,
+    pt: /(?:verso|estrofe|verse|v\d+)\b/i,
+    ru: /(?:куплет|строфа|verse|v\d+)(?!\p{L})/iu,
+    sv: /(?:vers|strof|verse|v\d+)\b/i,
+    uk: /(?:куплет|строфа|verse|v\d+)(?!\p{L})/iu,
+    zh: /(?:主歌|verse|v\d+)(?!\p{L})/iu,
+}
+
 export interface FreeShowChord {
     id: string
     pos: number
@@ -121,14 +258,29 @@ function cleanGroupName(groupName: string): string {
 
 function getGlobalGroup(groupName: string): string {
     const lower = groupName.toLowerCase()
-    if (/(?:pre[-_\s]?chorus|prechorus|pre[-_\s]?ref(?:reng)?)\b/i.test(lower)) return "pre_chorus"
-    if (/(?:chorus|kor|refrain|refreng|ref)\b/i.test(lower)) return "chorus"
-    if (/(?:bridge|bro|b[-_\s]?del)\b/i.test(lower)) return "bridge"
-    if (/(?:intro(?:duction)?|innledning)\b/i.test(lower)) return "intro"
-    if (/(?:outro|ending|avslutning|coda)\b/i.test(lower)) return "outro"
-    if (/(?:tag|hook|vamp|spoken)\b/i.test(lower)) return "tag"
-    if (/(?:break|solo|instrumental|interlude|mellomspill)\b/i.test(lower)) return "break"
-    if (/(?:verse|vers|v\d+)\b/i.test(lower) || /^v\b/i.test(lower)) return "verse"
+    const langs = ["da", "de", "en", "es", "fr", "it", "ja", "ko", "nl", "no", "pt", "ru", "sv", "uk", "zh"]
+    let PreChorus: boolean = false, Chorus: boolean = false, Bridge: boolean = false, Intro: boolean = false, Outro: boolean = false, Tag: boolean = false, Break: boolean = false, Verse: boolean = false
+
+    for (var i = 0; i < langs.length - 1; i++) {
+        const l = langs[i]
+        if (!PreChorus) { PreChorus = _pre_chorus[l].test(lower) }
+        if (!Chorus) { Chorus = _chorus[l].test(lower) }
+        if (!Bridge) { Bridge = _bridge[l].test(lower) }
+        if (!Intro) { Intro = _intro[l].test(lower) }
+        if (!Outro) { Outro = _outro[l].test(lower) }
+        if (!Tag) { Tag = _tag[l].test(lower) }
+        if (!Break) { Break = _break[l].test(lower) }
+        if (!Verse) { Verse = _verse[l].test(lower) }
+    }
+
+    if (PreChorus) return "pre_chorus"
+    if (Chorus) return "chorus"
+    if (Bridge) return "bridge"
+    if (Intro) return "intro"
+    if (Outro) return "outro"
+    if (Tag) return "tag"
+    if (Break) return "break"
+    if (Verse) return "verse"
     return "verse"
 }
 
