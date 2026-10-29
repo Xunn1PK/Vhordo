@@ -60,7 +60,7 @@ export const SUPPORTED_THEMES: ThemeOption[] = [
     }
 ]
 
-export const DEFAULT_THEME: SupportedTheme = "orange"
+export const DEFAULT_THEME: SupportedTheme = "blue"
 
 let currentTheme = $state<SupportedTheme>(DEFAULT_THEME)
 
