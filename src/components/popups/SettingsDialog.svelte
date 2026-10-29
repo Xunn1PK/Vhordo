@@ -495,12 +495,12 @@
                     <div class="integration-item">
                         <span>GitHub</span>
                         <div class="github-actions">
-                            <md-outlined-button onclick={() => setActivePopup("github_database")}>
-                                {getGitHubDatabaseConfig() ? t("settings", "github_configure") : t("settings", "connect")}
-                            </md-outlined-button>
-                            <md-filled-button disabled={getGitHubDatabaseConfig()?.mode !== "repository"} onclick={uploadDatabaseToGitHub}>
+                            <md-outlined-button disabled={getGitHubDatabaseConfig()?.mode !== "repository"} onclick={uploadDatabaseToGitHub}>
                                 <span class="material-symbols-outlined" slot="icon">cloud_upload</span>
                                 {t("settings", "github_upload")}
+                            </md-outlined-button>
+                            <md-filled-button onclick={() => setActivePopup("github_database")}>
+                                {getGitHubDatabaseConfig() ? t("settings", "github_configure") : t("settings", "connect")}
                             </md-filled-button>
                         </div>
                     </div>
@@ -591,6 +591,7 @@
         display: flex;
         align-items: center;
         gap: 8px;
+        background: var(--md-sys-color-surface-container-low, rgba(0, 0, 0, 0.02));
     }
 
     .settings-section {
