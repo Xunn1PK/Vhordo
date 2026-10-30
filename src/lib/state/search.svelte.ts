@@ -1,5 +1,3 @@
-import type { Song } from "$lib/models/Song"
-
 export const searchState = $state<{
     isOpen: boolean
     query: string
@@ -17,82 +15,109 @@ export function closeSearch() {
     searchState.query = ""
 }
 
-function normalizeSearchText(value: string | undefined | null): string {
-    return (value || "")
-        .normalize("NFKC")
+/**
+ * Normalizes text for search comparisons:
+ * - Converts to lower case
+ * - Strips combining diacritical marks / accents (e.g. "é" -> "e", "ñ" -> "n")
+ * - Cleans up punctuation and collapses whitespace
+ */
+export function normalizeSearchText(text: string | undefined | null): string {
+    if (!text) return ""
+    return text
         .toLowerCase()
-        .replace(/ё/g, "е")
-        .replace(/[^\p{L}\p{N}]+/gu, " ")
+        .normalize("NFD")
+        .replace(/\p{Diacritic}/gu, "")
+        .replace(/['’`´]/g, "") // Normalize apostrophes / contractions e.g. "don't" -> "dont"
         .trim()
-        .replace(/\s+/g, " ")
 }
 
-function getAllowedTypoCount(word: string): number {
-    return word.length >= 8 ? 2 : word.length >= 4 ? 1 : 0
+/**
+ * Computes standard Levenshtein distance between two short strings.
+ */
+function levenshteinDistance(a: string, b: string): number {
+    if (a === b) return 0
+    if (!a.length) return b.length
+    if (!b.length) return a.length
+
+    const row: number[] = Array.from({ length: b.length + 1 }, (_, i) => i)
+
+    for (let i = 1; i <= a.length; i++) {
+        let prev = i - 1
+        row[0] = i
+        for (let j = 1; j <= b.length; j++) {
+            const temp = row[j]
+            if (a[i - 1] === b[j - 1]) {
+                row[j] = prev
+            } else {
+                row[j] = Math.min(prev + 1, row[j] + 1, row[j - 1] + 1)
+            }
+            prev = temp
+        }
+    }
+
+    return row[b.length]
 }
 
-function getEditDistance(first: string, second: string): number {
-    const distances = Array.from({ length: first.length + 1 }, () => new Array<number>(second.length + 1).fill(0))
+/**
+ * Checks fuzzy match of token against target words or prefixes using Levenshtein distance:
+ * - 0 distance (exact): allowed
+ * - length >= 4: up to 1 edit distance
+ * - length >= 8: up to 2 edit distances
+ */
+function fuzzyWordMatch(targetWords: string[], token: string): number {
+    const maxEdits = token.length >= 8 ? 2 : token.length >= 4 ? 1 : 0
+    let bestScore = 0
 
-    for (let i = 0; i <= first.length; i++) distances[i]![0] = i
-    for (let j = 0; j <= second.length; j++) distances[0]![j] = j
+    for (const word of targetWords) {
+        if (word === token) return 1.0
+        if (word.startsWith(token)) return 0.95
+        if (word.includes(token)) return 0.85
 
-    for (let i = 1; i <= first.length; i++) {
-        for (let j = 1; j <= second.length; j++) {
-            const substitutionCost = first[i - 1] === second[j - 1] ? 0 : 1
-            distances[i]![j] = Math.min(
-                distances[i - 1]![j]! + 1,
-                distances[i]![j - 1]! + 1,
-                distances[i - 1]![j - 1]! + substitutionCost
-            )
-
-            if (
-                i > 1 &&
-                j > 1 &&
-                first[i - 1] === second[j - 2] &&
-                first[i - 2] === second[j - 1]
-            ) {
-                distances[i]![j] = Math.min(distances[i]![j]!, distances[i - 2]![j - 2]! + 1)
+        if (maxEdits > 0) {
+            // Also check prefix distance for in-progress typing if word is longer than token
+            const candidate = word.length > token.length ? word.slice(0, token.length) : word
+            const dist = levenshteinDistance(candidate, token)
+            if (dist <= maxEdits) {
+                // Score between 0.6 and 0.8 depending on distance
+                const score = 0.8 - dist * 0.1
+                if (score > bestScore) bestScore = score
             }
         }
     }
 
-    return distances[first.length]![second.length]!
-}
-
-function isApproximatePhraseMatch(text: string, query: string): boolean {
-    const textWords = text.split(" ")
-    const queryWords = query.split(" ")
-    if (queryWords.length > textWords.length) return false
-
-    for (let start = 0; start <= textWords.length - queryWords.length; start++) {
-        const matches = queryWords.every((queryWord, index) => {
-            const textWord = textWords[start + index]!
-            const allowedTypos = getAllowedTypoCount(queryWord)
-            return (
-                textWord === queryWord ||
-                (allowedTypos > 0 &&
-                    Math.abs(queryWord.length - textWord.length) <= allowedTypos &&
-                    getEditDistance(queryWord, textWord) <= allowedTypos)
-            )
-        })
-        if (matches) return true
-    }
-
-    return false
+    return bestScore
 }
 
 /**
- * Scores a title/name against a search query:
- * 3 = exact, 2 = prefix, 1 = substring, 0.5 = approximate, 0 = no match
+ * Scores a title/name against a search query using normalization and fuzzy matching:
+ * Returns score > 0 if matched, 0 if no match.
  */
-function scoreName(name: string | undefined | null, q: string): number {
-    const n = normalizeSearchText(name)
-    if (!n || !q) return 0
-    if (n === q) return 3
-    if (n.startsWith(q)) return 2
-    if (n.includes(q)) return 1
-    return isApproximatePhraseMatch(n, q) ? 0.5 : 0
+function scoreName(rawName: string | undefined | null, rawQuery: string): number {
+    const name = normalizeSearchText(rawName)
+    const q = normalizeSearchText(rawQuery)
+    if (!name || !q) return 0
+
+    // Exact full string match
+    if (name === q) return 10
+    // Starts with full query
+    if (name.startsWith(q)) return 8
+    // Substring match
+    if (name.includes(q)) return 6
+
+    // Multi-token / fuzzy match
+    const tokens = q.split(/\s+/).filter(Boolean)
+    if (tokens.length === 0) return 0
+
+    const targetWords = name.split(/[\s\-_,.:;!?/()]+/).filter(Boolean)
+    let totalScore = 0
+
+    for (const token of tokens) {
+        const tokenScore = fuzzyWordMatch(targetWords, token)
+        if (tokenScore === 0) return 0 // All tokens must match or fuzzy match
+        totalScore += tokenScore
+    }
+
+    return 2 + (totalScore / tokens.length) * 3 // Range 2 - 5
 }
 
 /**
@@ -101,40 +126,53 @@ function scoreName(name: string | undefined | null, q: string): number {
  */
 export function getSearchableSongContent(content: string | undefined | null): string {
     if (!content) return ""
-    return content.replace(/\{[^}]*\}|\[[^\]]*\]/g, "").replace(/\s+/g, " ").trim()
+    return content
+        .replace(/\{[^}]*\}/g, " ")
+        .replace(/\[[^\]]*\]/g, "")
+        .replace(/\s+/g, " ")
+        .trim()
 }
 
 /**
  * Scores a song against a search query with priority:
- * 1. Title match (30+)
- * 2. Metadata: artist / composer / album / etc. (20+)
- * 3. Text content / lyrics (10)
+ * 1. Title match (100+)
+ * 2. Metadata: artist / composer / album / etc. (50+)
+ * 3. Text content / lyrics (10+)
  */
-export function scoreSongMatch(song: { name: string; metadata?: any; content?: string }, query: string): number {
-    const q = normalizeSearchText(query)
+export function scoreSongMatch(song: { name: string; metadata?: any; content?: string }, rawQuery: string): number {
+    const q = normalizeSearchText(rawQuery)
     if (!q) return 0
 
     // Priority 1: Title
     const titleScore = scoreName(song.name, q)
-    if (titleScore > 0) return 30 + titleScore
+    if (titleScore > 0) return 100 + titleScore
 
     // Priority 2: Metadata
     if (song.metadata) {
         const artistScore = scoreName(song.metadata.artist, q)
-        if (artistScore > 0) return 20 + artistScore
+        if (artistScore > 0) return 50 + artistScore
 
         for (const [key, value] of Object.entries(song.metadata)) {
             if (key !== "artist" && typeof value === "string") {
-                const metadataScore = scoreName(value, q)
-                if (metadataScore > 0) return 20 + metadataScore
+                const metaScore = scoreName(value, q)
+                if (metaScore > 0) return 40 + metaScore
             }
         }
     }
 
     // Priority 3: Lyrics / Content
     if (song.content) {
-        const contentScore = scoreName(getSearchableSongContent(song.content), q)
-        if (contentScore > 0) return 10 + contentScore
+        const lyrics = normalizeSearchText(getSearchableSongContent(song.content))
+        if (lyrics.includes(q)) {
+            return 20
+        }
+
+        // Token match for lyrics (if user typed multiple words)
+        const tokens = q.split(/\s+/).filter(Boolean)
+        if (tokens.length > 1) {
+            const allMatch = tokens.every((t) => lyrics.includes(t))
+            if (allMatch) return 15
+        }
     }
 
     return 0
@@ -164,8 +202,8 @@ export function searchSongs<T extends { name: string; metadata?: any; content?: 
  * Generic search for named items (folders, lists).
  */
 export function searchNamedItems<T extends { name: string }>(items: T[], query: string): T[] {
-    const q = normalizeSearchText(query)
-    if (!query.trim()) return items
+    const q = query.trim()
+    if (!q) return items
     return filterAndSortByScore(items, (item) => scoreName(item.name, q))
 }
 
@@ -173,14 +211,9 @@ export function searchNamedItems<T extends { name: string }>(items: T[], query: 
  * Searches and sorts setlist items (songs and sections).
  */
 export function searchListDisplayItems<T extends { item: { name: string; song?: any } }>(items: T[], query: string): T[] {
-    const q = normalizeSearchText(query)
-    if (!query.trim()) return items
+    const q = query.trim()
+    if (!q) return items
     return filterAndSortByScore(items, (entry) =>
         entry.item.song ? scoreSongMatch(entry.item.song, q) : scoreName(entry.item.name, q) * 10
     )
-}
-
-export function songMatchesSearch(song: Song, query: string): boolean {
-    if (!query.trim()) return true
-    return scoreSongMatch(song, query) > 0
 }
