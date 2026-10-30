@@ -144,10 +144,9 @@ export function internalGoBack(): void {
 
 /**
  * Dismisses the topmost overlay (confirm, popup, search, selection, or edit mode).
- * When preserving selection, skips its cancel handler during forced page navigation.
  * Returns true if an overlay was dismissed, false otherwise.
  */
-export function dismissActiveOverlay(preserveSelection = false): boolean {
+export function dismissActiveOverlay(): boolean {
     if (confirmState.isOpen) {
         closeConfirm()
         return true
@@ -163,7 +162,7 @@ export function dismissActiveOverlay(preserveSelection = false): boolean {
         return true
     }
 
-    if (!preserveSelection && listEditingState.onCancelSelection?.()) {
+    if (listEditingState.onCancelSelection?.()) {
         return true
     }
 
@@ -178,7 +177,7 @@ export function dismissActiveOverlay(preserveSelection = false): boolean {
 export function goBack(forcePage = false): void {
     if (!forcePage && dismissActiveOverlay()) return
 
-    if (forcePage) dismissActiveOverlay(true)
+    if (forcePage) dismissActiveOverlay()
 
     if (menuState.previousPages.length > 0) {
         internalGoBack()
