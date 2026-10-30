@@ -104,7 +104,7 @@ const _tag: Record<string, RegExp> = {
     nl: /(?:tag|hook|vamp|spoken|gesproken)\b/i,
     no: /(?:tag|hook|vamp|spoken|snakket)\b/i,
     pt: /(?:tag|hook|vamp|spoken|falado)\b/i,
-    ru: /(?:tag|hook|vamp|spoken|тег|хук|разговорный|речь)\b/i,
+    ru: /(?:tag|hook|vamp|spoken|тег|хук|разговорный|речь|запев)\b/i,
     sv: /(?:tag|hook|vamp|spoken|talat)\b/i,
     uk: /(?:tag|hook|vamp|spoken|тег|хук|розмовний|речитатив)\b/i,
     zh: /(?:tag|hook|vamp|spoken|钩子|说唱|独白)\b/i,
