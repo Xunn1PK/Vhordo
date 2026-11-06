@@ -943,14 +943,14 @@
                     {@const chordColor = storage.settings.paperOptions?.chordColor || "#5498be"}
 
                     <div class="slide" style="--font-scale: {fontScale}; --chord-color: {chordColor};">
-                        <Paper padding={hasMedia ? 0 : 10} background={paperBg} headerText={song?.name ?? ""} {fontScale} {chordColor} fullscreenA4 onPaginate={() => scheduleUpdatePageCount(false)}>
+                        <Paper padding={hasMedia ? 0 : 10} background={paperBg} headerText={song?.name ?? ""} {fontScale} {chordColor} onPaginate={() => scheduleUpdatePageCount(false)}>
                             <ChordPro {songId} {targetKey} numColumns={2} hideChords={fullscreenState.lyricsOnly} showMeta />
                         </Paper>
                     </div>
                 {:else if slideItem.type === "section"}
                     {@const customBg = storage.settings.paperOptions?.background || "white"}
                     <div class="slide">
-                        <Paper padding={16} background={customBg} headerText="" fullscreenA4 onPaginate={() => scheduleUpdatePageCount(false)}>
+                        <Paper padding={16} background={customBg} headerText="" onPaginate={() => scheduleUpdatePageCount(false)}>
                             <div class="fullscreen-section-container">
                                 <div class="fullscreen-section-badge">
                                     <span class="material-symbols-outlined fullscreen-section-icon">bookmark</span>
@@ -1223,19 +1223,37 @@
         align-items: center !important;
     }
 
-    /* Fixed A4 layout is scaled as a whole to fit the available viewport. */
-    .slider-viewport :global(.paper-page.fullscreen-a4-page) {
-        width: 210mm !important;
-        height: 297mm !important;
-        max-width: none !important;
-        max-height: none !important;
-        aspect-ratio: auto !important;
-        margin-left: calc((100vw - 210mm) / 2) !important;
-        margin-right: calc((100vw - 210mm) / 2) !important;
-        transform-origin: center;
+    /* Individual A-Paper Page */
+    .slider-viewport :global(.paper-page) {
+        --margin-x: 10px;
+        --margin-y: 10px;
+
+        @media (max-width: 600px) {
+            --margin-x: 0px;
+            --margin-y: 6px;
+        }
+
+        /* Height fills the screen (leaving room for top/bottom margins) */
+        height: calc(100vh - var(--margin-y)) !important;
+        height: calc(100dvh - var(--margin-y)) !important;
+        max-height: calc(100vh - var(--margin-y)) !important;
+        max-height: calc(100dvh - var(--margin-y)) !important;
+
+        /* Width adheres to A4 aspect ratio (210/297), constrained by screen width */
+        width: auto !important;
+        max-width: calc(100vw - var(--margin-x)) !important;
+        aspect-ratio: 210 / 297;
+
+        /* Calculate exact rendered paper width */
+        --paper-w: min(calc((100dvh - var(--margin-y)) * (210 / 297)), calc(100vw - var(--margin-x)));
+
+        /* Auto-calculate side margins so total slot footprint = 100vw */
+        margin-left: calc((100vw - var(--paper-w)) / 2) !important;
+        margin-right: calc((100vw - var(--paper-w)) / 2) !important;
+
         flex-shrink: 0 !important;
-        flex-basis: 210mm !important;
         box-sizing: border-box !important;
+        /* box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4) !important; */
         border-radius: 2px !important;
     }
 

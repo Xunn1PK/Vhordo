@@ -11,7 +11,6 @@
         fontScale?: number
         headerText?: string
         ignoreResizeHeight?: boolean
-        fullscreenA4?: boolean
         onPaginate?: () => void
         children?: any
     }
@@ -24,15 +23,12 @@
         fontScale = undefined,
         headerText = "",
         ignoreResizeHeight = false,
-        fullscreenA4 = false,
         onPaginate = undefined,
         children
     }: Props = $props()
 
     // A4 aspect ratio is 210mm / 297mm
     const ASPECT_RATIO = 210 / 297
-    const A4_WIDTH_PX = (210 * 96) / 25.4
-    const A4_HEIGHT_PX = (297 * 96) / 25.4
 
     let containerEl: HTMLElement
     let sourceEl: HTMLElement
@@ -65,16 +61,10 @@
             // Helper: Constructs a new page shell
             const createPage = (pageNum: number) => {
                 const page = document.createElement("div")
-                page.className = fullscreenA4 ? "paper-page fullscreen-a4-page" : "paper-page"
+                page.className = "paper-page"
                 page.setAttribute("data-page", pageNum.toString())
-                page.style.aspectRatio = fullscreenA4 ? "auto" : `${ASPECT_RATIO}`
+                page.style.aspectRatio = `${ASPECT_RATIO}`
                 page.style.setProperty("--paper-padding", `${padding}mm`)
-                if (fullscreenA4) {
-                    const viewportWidth = window.visualViewport?.width ?? window.innerWidth
-                    const viewportHeight = window.visualViewport?.height ?? window.innerHeight
-                    const scale = Math.min(1, (viewportWidth - 20) / A4_WIDTH_PX, (viewportHeight - 20) / A4_HEIGHT_PX)
-                    page.style.transform = `scale(${Math.max(0, scale)})`
-                }
 
                 // Top Center Header (not on first page)
                 if (headerText && pageNum > 1) {
@@ -317,14 +307,6 @@
         const handleImageLoad = () => schedulePaginate()
         sourceEl?.addEventListener("load", handleImageLoad, true)
 
-        const handleViewportResize = () => {
-            if (fullscreenA4) scheduleDebouncedPaginate(120)
-        }
-        if (fullscreenA4) {
-            window.addEventListener("resize", handleViewportResize)
-            window.visualViewport?.addEventListener("resize", handleViewportResize)
-        }
-
         paginate()
 
         return () => {
@@ -332,10 +314,6 @@
             resizeObserver.disconnect()
             mutationObserver.disconnect()
             sourceEl?.removeEventListener("load", handleImageLoad, true)
-            if (fullscreenA4) {
-                window.removeEventListener("resize", handleViewportResize)
-                window.visualViewport?.removeEventListener("resize", handleViewportResize)
-            }
             if (pagesContainerEl) pagesContainerEl.innerHTML = ""
         }
     })
@@ -355,7 +333,7 @@
     })
 </script>
 
-<div class="paper-viewer" class:dark-paper={isDarkBackground} class:fullscreen-a4={fullscreenA4} bind:this={containerEl} style="--background: {background}; --paper-text-color: {isDarkBackground ? '#e6e1e5' : '#111111'};{chordColor ? ` --chord-color: ${chordColor};` : ''}">
+<div class="paper-viewer" class:dark-paper={isDarkBackground} bind:this={containerEl} style="--background: {background}; --paper-text-color: {isDarkBackground ? '#e6e1e5' : '#111111'};{chordColor ? ` --chord-color: ${chordColor};` : ''}">
     <!-- Offscreen Slot Container (used for layout reference & reading DOM nodes) -->
     <div class="source-container" bind:this={sourceEl}>
         {@render children()}
@@ -423,10 +401,6 @@
         :global(.paper-page) {
             padding: min(var(--paper-padding, 20mm), 6mm) !important;
         }
-    }
-
-    .paper-viewer.fullscreen-a4 :global(.paper-page) {
-        padding: var(--paper-padding, 20mm) !important;
     }
 
     :global(.page-content) {
