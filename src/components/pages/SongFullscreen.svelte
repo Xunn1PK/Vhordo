@@ -23,10 +23,6 @@
     import TransposeButton from "../song/TransposeButton.svelte"
 
     type FullscreenSlide = { type: "song"; songItem: ListSongItem; originalIndex: number } | { type: "section"; sections: Array<{ name: string; originalIndex: number }>; originalIndex: number }
-    const A4_PAGE_WIDTH_PX = (210 * 96) / 25.4
-    const A4_PAGE_HEIGHT_PX = (297 * 96) / 25.4
-    const A4_SPREAD_GAP_PX = 16
-    const MIN_SPREAD_SCALE_RATIO = 0.85
 
     // --- State & Derived State ---
     const listId = $derived(menuState.previousPages.find((a) => a.activePage === "list")?.contentId)
@@ -110,7 +106,6 @@
     })
     let totalPages = $state(1)
     let sliderEl = $state<HTMLDivElement | null>(null)
-    let isTwoPageMode = $state(false)
 
     function initSlider(node: HTMLElement) {
         node.style.transform = `translate3d(-${initialSlideIndex * 100}vw, 0, 0)`
@@ -307,12 +302,11 @@
             const paperPages = Array.from(slideEl.querySelectorAll<HTMLElement>(".paper-page"))
             if (paperPages.length > 0) {
                 hasAnyPaperPage = true
-                const pageStep = isTwoPageMode && paperPages.length > 1 ? 2 : 1
-                for (let pageInSong = 0; pageInSong < paperPages.length; pageInSong += pageStep) {
+                paperPages.forEach((_, pageInSong) => {
                     newPageSongMap.push(songId)
                     newPageIndexMap.push(pageInSong)
                     newPageSongIndexMap.push(originalIndex)
-                }
+                })
             } else {
                 // Placeholder or section slide: counts as 1 slot in the carousel
                 newPageSongMap.push(songId)
@@ -346,12 +340,6 @@
             restoreInitialPosition(hasAnyPaperPage)
         } else if (hasMappingChanged) {
             let targetPage = -1
-            const findClosestPage = (matchingPages: number[]) => {
-                const exactMatch = matchingPages.find((page) => pageIndexMap[page] === currentPageInSong)
-                if (exactMatch !== undefined) return exactMatch
-                const previousPage = [...matchingPages].reverse().find((page) => (pageIndexMap[page] ?? 0) < currentPageInSong)
-                return previousPage ?? matchingPages[0] ?? -1
-            }
 
             if (currentSongIndexInList !== null) {
                 const matchingPages: number[] = []
@@ -361,7 +349,8 @@
                     }
                 }
                 if (matchingPages.length > 0) {
-                    targetPage = findClosestPage(matchingPages)
+                    const offset = Math.min(currentPageInSong, matchingPages.length - 1)
+                    targetPage = matchingPages[Math.max(0, offset)]
                 }
             }
 
@@ -373,7 +362,8 @@
                     }
                 }
                 if (matchingPages.length > 0) {
-                    targetPage = findClosestPage(matchingPages)
+                    const offset = Math.min(currentPageInSong, matchingPages.length - 1)
+                    targetPage = matchingPages[Math.max(0, offset)]
                 }
             }
 
@@ -679,22 +669,6 @@
             resizeObserver.observe(sliderEl)
         }
 
-        const updateTwoPageMode = () => {
-            const viewportWidth = window.innerWidth
-            const viewportHeight = window.innerHeight
-            const heightScale = Math.max(0, Math.min(1, (viewportHeight - 20) / A4_PAGE_HEIGHT_PX))
-            const singlePageScale = Math.max(0, Math.min(heightScale, (viewportWidth - 20) / A4_PAGE_WIDTH_PX))
-            const spreadScale = Math.max(0, Math.min(heightScale, (viewportWidth - 20 - A4_SPREAD_GAP_PX) / (2 * A4_PAGE_WIDTH_PX)))
-            const nextMode = spreadScale > 0 && spreadScale >= singlePageScale * MIN_SPREAD_SCALE_RATIO
-            if (nextMode !== isTwoPageMode) {
-                isTwoPageMode = nextMode
-                scheduleDebouncedUpdatePageCount(120, true)
-            }
-        }
-        updateTwoPageMode()
-        window.addEventListener("resize", updateTwoPageMode)
-        window.visualViewport?.addEventListener("resize", updateTwoPageMode)
-
         updatePageCount()
         setPositionByIndex(false)
 
@@ -706,8 +680,6 @@
             if (transitionTimer !== null) clearTimeout(transitionTimer)
             if (moveRafId !== null) cancelAnimationFrame(moveRafId)
             window.removeEventListener("wheel", handleWheel)
-            window.removeEventListener("resize", updateTwoPageMode)
-            window.visualViewport?.removeEventListener("resize", updateTwoPageMode)
             removeFullscreenListener()
             resizeObserver.disconnect()
             releaseWakeLock()
@@ -971,7 +943,7 @@
                     {@const chordColor = storage.settings.paperOptions?.chordColor || "#5498be"}
 
                     <div class="slide" style="--font-scale: {fontScale}; --chord-color: {chordColor};">
-                        <Paper padding={hasMedia ? 0 : 10} background={paperBg} headerText={song?.name ?? ""} {fontScale} {chordColor} fullscreenA4 fullscreenSpread={isTwoPageMode} onPaginate={() => scheduleUpdatePageCount(false)}>
+                        <Paper padding={hasMedia ? 0 : 10} background={paperBg} headerText={song?.name ?? ""} {fontScale} {chordColor} fullscreenA4 onPaginate={() => scheduleUpdatePageCount(false)}>
                             <ChordPro {songId} {targetKey} numColumns={2} hideChords={fullscreenState.lyricsOnly} showMeta />
                         </Paper>
                     </div>
@@ -1265,19 +1237,6 @@
         flex-basis: 210mm !important;
         box-sizing: border-box !important;
         border-radius: 2px !important;
-    }
-
-    .slider-viewport :global(.paper-spread) {
-        position: relative;
-        width: 100vw;
-        height: 100dvh;
-        flex: 0 0 100vw;
-        box-sizing: border-box;
-    }
-
-    .slider-viewport :global(.paper-spread .paper-page.fullscreen-a4-page) {
-        position: absolute !important;
-        margin: 0 !important;
     }
 
     .actions {

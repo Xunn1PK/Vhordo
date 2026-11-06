@@ -12,7 +12,6 @@
         headerText?: string
         ignoreResizeHeight?: boolean
         fullscreenA4?: boolean
-        fullscreenSpread?: boolean
         onPaginate?: () => void
         children?: any
     }
@@ -26,7 +25,6 @@
         headerText = "",
         ignoreResizeHeight = false,
         fullscreenA4 = false,
-        fullscreenSpread = false,
         onPaginate = undefined,
         children
     }: Props = $props()
@@ -35,7 +33,6 @@
     const ASPECT_RATIO = 210 / 297
     const A4_WIDTH_PX = (210 * 96) / 25.4
     const A4_HEIGHT_PX = (297 * 96) / 25.4
-    const SPREAD_GAP_PX = 16
 
     let containerEl: HTMLElement
     let sourceEl: HTMLElement
@@ -256,36 +253,6 @@
                 }
             }
 
-            const paperPages = Array.from(pagesContainerEl.querySelectorAll<HTMLElement>(":scope > .paper-page"))
-            if (fullscreenA4 && fullscreenSpread && paperPages.length > 1) {
-                const viewportWidth = window.innerWidth
-                const viewportHeight = window.innerHeight
-                const scale = Math.max(0, Math.min(1, (viewportWidth - 20 - SPREAD_GAP_PX) / (2 * A4_WIDTH_PX), (viewportHeight - 20) / A4_HEIGHT_PX))
-                const pageWidth = A4_WIDTH_PX * scale
-                const pageHeight = A4_HEIGHT_PX * scale
-                const spreadWidth = pageWidth * 2 + SPREAD_GAP_PX
-
-                pagesContainerEl.innerHTML = ""
-                for (let pageOffset = 0; pageOffset < paperPages.length; pageOffset += 2) {
-                    const spreadPages = paperPages.slice(pageOffset, pageOffset + 2)
-                    const spread = document.createElement("div")
-                    spread.className = "paper-spread"
-                    spreadPages.forEach((page, spreadPageIndex) => {
-                        page.style.position = "absolute"
-                        page.style.left = `${(viewportWidth - spreadWidth) / 2 + spreadPageIndex * (pageWidth + SPREAD_GAP_PX)}px`
-                        page.style.top = `${(viewportHeight - pageHeight) / 2}px`
-                        page.style.margin = "0"
-                        page.style.transformOrigin = "top left"
-                        page.style.transform = `scale(${scale})`
-                        spread.appendChild(page)
-                    })
-                    if (spreadPages.length === 1) {
-                        spreadPages[0].style.left = `${(viewportWidth - pageWidth) / 2}px`
-                    }
-                    pagesContainerEl.appendChild(spread)
-                }
-            }
-
             onPaginate?.()
         } finally {
             isPaginating = false
@@ -296,16 +263,14 @@
     let prevHeader: string | undefined
     let prevPageIndex: number | null | undefined
     let prevFontScale: number | undefined
-    let prevFullscreenSpread: boolean | undefined
 
     $effect(() => {
-        if (padding !== prevPadding || headerText !== prevHeader || pageIndex !== prevPageIndex || fontScale !== prevFontScale || fullscreenSpread !== prevFullscreenSpread) {
-            const isInitial = prevPadding === undefined && prevHeader === undefined && prevPageIndex === undefined && prevFontScale === undefined && prevFullscreenSpread === undefined
+        if (padding !== prevPadding || headerText !== prevHeader || pageIndex !== prevPageIndex || fontScale !== prevFontScale) {
+            const isInitial = prevPadding === undefined && prevHeader === undefined && prevPageIndex === undefined && prevFontScale === undefined
             prevPadding = padding
             prevHeader = headerText
             prevPageIndex = pageIndex
             prevFontScale = fontScale
-            prevFullscreenSpread = fullscreenSpread
             if (!isInitial) {
                 schedulePaginate()
             }
@@ -462,10 +427,6 @@
 
     .paper-viewer.fullscreen-a4 :global(.paper-page) {
         padding: var(--paper-padding, 20mm) !important;
-    }
-
-    .paper-viewer.fullscreen-a4 :global(.paper-spread.vertical) {
-        grid-template-rows: repeat(2, minmax(0, 1fr));
     }
 
     :global(.page-content) {
