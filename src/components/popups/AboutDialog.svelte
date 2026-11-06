@@ -13,7 +13,7 @@
         setActivePage("landing")
     }
 
-    const appVersion = __APP_VERSION__
+    const [chordoVersion, vhordoVersion] = __APP_VERSION__.split("-v")
 
     onMount(async () => {
         // check for service worker updates
@@ -28,7 +28,10 @@
 
 <BaseDialog open icon="library_music" title={`Vhordo: ${t("about", "tagline")}`} onclose={closeDialog}>
     <div class="about-content">
-        <p class="about-version">{t("about", "version")} {appVersion}</p>
+        <div class="about-versions">
+            <p class="about-version">Chordo v{chordoVersion}</p>
+            <p class="about-version">Vhordo v{vhordoVersion}</p>
+        </div>
         <p class="about-desc">
             {t("about", "desc")}
         </p>
@@ -86,6 +89,12 @@
         font-size: 0.85rem;
         opacity: 0.7;
         margin: 0;
+    }
+
+    .about-versions {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
     }
 
     .about-desc {
