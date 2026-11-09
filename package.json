@@ -1,6 +1,6 @@
 {
     "name": "vhordo",
-    "version": "0.2.6-v6",
+    "version": "0.2.6-v6.1",
     "type": "module",
     "scripts": {
         "dev": "vite --config config/vite.config.ts",
