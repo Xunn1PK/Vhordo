@@ -106,6 +106,7 @@
     })
     let totalPages = $state(1)
     let sliderEl = $state<HTMLDivElement | null>(null)
+    let twoPageView = $state(false)
 
     function initSlider(node: HTMLElement) {
         node.style.transform = `translate3d(-${initialSlideIndex * 100}vw, 0, 0)`
@@ -294,6 +295,7 @@
         const newPageSongIndexMap: number[] = []
 
         let hasAnyPaperPage = false
+        let hasMultiPageSong = false
         slideEls.forEach((slideEl, slideIndex) => {
             const slideItem = slides[slideIndex]
             const songId = slideItem?.type === "song" ? (slideItem.songItem.id ?? null) : null
@@ -302,6 +304,9 @@
             const paperPages = Array.from(slideEl.querySelectorAll<HTMLElement>(".paper-page"))
             if (paperPages.length > 0) {
                 hasAnyPaperPage = true
+                if (slideItem?.type === "song" && paperPages.length > 1) {
+                    hasMultiPageSong = true
+                }
                 paperPages.forEach((_, pageInSong) => {
                     newPageSongMap.push(songId)
                     newPageIndexMap.push(pageInSong)
@@ -314,6 +319,13 @@
                 newPageSongIndexMap.push(originalIndex)
             }
         })
+
+        const viewportWidth = window.innerWidth
+        const viewportHeight = window.innerHeight
+        const pageMarginY = viewportWidth <= 600 ? 6 : 10
+        const pageWidth = (viewportHeight - pageMarginY) * (210 / 297)
+        const previousTwoPageView = twoPageView
+        twoPageView = hasMultiPageSong && viewportWidth >= pageWidth * 2 + 12
 
         // Capture the active song and page before applying new pagination mappings
         const currentSongIndexInList = lastActiveOriginalIndex ?? pageSongIndexMap[currentPageIndex] ?? null
@@ -372,6 +384,8 @@
             }
 
             currentPageIndex = targetPage
+            setPositionByIndex(false)
+        } else if (previousTwoPageView !== twoPageView) {
             setPositionByIndex(false)
         }
     }
@@ -534,7 +548,8 @@
             transitionTimer = null
         }
         const viewportWidth = window.innerWidth
-        currentTranslate = -currentPageIndex * viewportWidth
+        const pageStep = twoPageView ? (window.innerHeight - (viewportWidth <= 600 ? 6 : 10)) * (210 / 297) + 12 : viewportWidth
+        currentTranslate = -currentPageIndex * pageStep
         prevTranslate = currentTranslate
 
         const duration = animate ? getTransitionDuration() : 0
@@ -916,7 +931,7 @@
 {/if}
 
 <main>
-    <div class="slider-viewport">
+    <div class="slider-viewport" class:two-page-view={twoPageView}>
         <div
             class="slider"
             role="region"
@@ -1202,6 +1217,11 @@
         will-change: transform;
     }
 
+    .slider-viewport.two-page-view .slider {
+        padding-left: calc((100vw - (2 * var(--two-page-paper-width)) - 12px) / 2);
+        box-sizing: border-box;
+    }
+
     .slide {
         display: flex;
         flex-direction: row;
@@ -1255,6 +1275,24 @@
         box-sizing: border-box !important;
         /* box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4) !important; */
         border-radius: 2px !important;
+    }
+
+    .slider-viewport.two-page-view {
+        --two-page-paper-width: calc((100dvh - var(--two-page-margin-y)) * (210 / 297));
+        --two-page-margin-y: 10px;
+    }
+
+    @media (max-width: 600px) {
+        .slider-viewport.two-page-view {
+            --two-page-margin-y: 6px;
+        }
+    }
+
+    .slider-viewport.two-page-view :global(.paper-page) {
+        width: var(--two-page-paper-width) !important;
+        max-width: none !important;
+        margin-left: 0 !important;
+        margin-right: 12px !important;
     }
 
     .actions {
