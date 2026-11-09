@@ -35,10 +35,12 @@
     ]
 
     export const DEFAULT_CHORD_COLOR = "#5498be"
+    const MIN_FONT_SIZE = 50
+    const MAX_FONT_SIZE = 150
 
     let currentBg = $state(storage.settings.paperOptions?.background || "#ffffff")
     let currentChordColor = $state(storage.settings.paperOptions?.chordColor || DEFAULT_CHORD_COLOR)
-    let currentFontSize = $state(storage.settings.paperOptions?.fontSize ?? 100)
+    let currentFontSize = $state(Math.max(MIN_FONT_SIZE, Math.min(MAX_FONT_SIZE, storage.settings.paperOptions?.fontSize ?? 100)))
     let currentPageAnimation = $state<PageSwitchAnimation>(storage.settings.paperOptions?.pageAnimation || "fast")
     let chordColorInputRef = $state<HTMLInputElement | null>(null)
 
@@ -120,17 +122,17 @@
     }
 
     function stepFontSize(delta: number) {
-        const next = Math.max(70, Math.min(150, currentFontSize + delta))
+        const next = Math.max(MIN_FONT_SIZE, Math.min(MAX_FONT_SIZE, currentFontSize + delta))
         setFontSize(next)
     }
 
     function setFontSize(val: number) {
-        currentFontSize = val
+        currentFontSize = Math.max(MIN_FONT_SIZE, Math.min(MAX_FONT_SIZE, val))
         storage.settings = new Settings({
             ...storage.settings,
             paperOptions: {
                 ...storage.settings.paperOptions,
-                fontSize: val
+                fontSize: currentFontSize
             }
         })
         storage.persistSettings()
@@ -355,16 +357,16 @@
                 </div>
 
                 <div class="font-size-row">
-                    <md-filled-tonal-icon-button onclick={() => stepFontSize(-5)} disabled={currentFontSize <= 70} aria-label="Decrease text size">
+                    <md-filled-tonal-icon-button onclick={() => stepFontSize(-5)} disabled={currentFontSize <= MIN_FONT_SIZE} aria-label="Decrease text size">
                         <span class="material-symbols-outlined">remove</span>
                     </md-filled-tonal-icon-button>
 
                     <div class="font-size-slider-wrapper">
-                        <md-slider min="70" max="150" value={currentFontSize} step="5" labeled oninput={handleFontSizeInput} class="font-slider"></md-slider>
+                        <md-slider min={MIN_FONT_SIZE} max={MAX_FONT_SIZE} value={currentFontSize} step="5" labeled oninput={handleFontSizeInput} class="font-slider"></md-slider>
                         <span class="font-size-label">{currentFontSize}%</span>
                     </div>
 
-                    <md-filled-tonal-icon-button onclick={() => stepFontSize(5)} disabled={currentFontSize >= 150} aria-label="Increase text size">
+                    <md-filled-tonal-icon-button onclick={() => stepFontSize(5)} disabled={currentFontSize >= MAX_FONT_SIZE} aria-label="Increase text size">
                         <span class="material-symbols-outlined">add</span>
                     </md-filled-tonal-icon-button>
                 </div>
